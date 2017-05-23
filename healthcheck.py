@@ -19,12 +19,9 @@ from datetime import datetime
 #Fabric for ssh connections
 
 from fabric import tasks
-from fabric.api import run
-from fabric.api import env
-from fabric.api import hosts, roles, run, execute, task, parallel,runs_once,settings,hide
+from fabric.api import run,env, run, execute, parallel,settings,hide
 from fabric.network import disconnect_all
-from fabric.exceptions import CommandTimeout
-from fabric.exceptions import NetworkError
+from fabric.exceptions import CommandTimeout,NetworkError
 
 
 #Fabric setup
