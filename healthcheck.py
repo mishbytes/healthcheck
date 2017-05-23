@@ -280,7 +280,7 @@ class Healthcheck(object):
             self.status_output=[]
             self.hc_config=HealthCheckConfig(configFile)
 
-        def outputAppend(self,data):
+        def addStatus(self,data):
             self.status_dict["output"].append(data)
 
         def getStatus(self):
@@ -293,7 +293,7 @@ class Healthcheck(object):
                                                                              application.name,application.hosts))
                     if application.type.upper() == 'WEBAPP':
                         #log.debug("Environment: %s Application: %s" % (application.environment,application.name))
-                        self.outputAppend(HealthCheckStatus(application.hosts,
+                        self.addStatus(HealthCheckStatus(application.hosts,
                                                             application.name,
                                                             application.type,
                                                             'Availability',
@@ -303,7 +303,7 @@ class Healthcheck(object):
                                                             '200 OK').asDict())
                     elif application.type.upper() == 'DISK':
                         status_value=getDiskStatus(application.environment,application.hosts,application.name)
-                        self.outputAppend(HealthCheckStatus(application.hosts,
+                        self.addStatus(HealthCheckStatus(application.hosts,
                                                             application.name,
                                                             application.type,
                                                             'Availability',
