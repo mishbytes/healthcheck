@@ -1,15 +1,35 @@
+"""
+__appname__='healthcheck'
+__version__='1.0.0'
+__author__='mudit.mishra@sas.com'
+"""
+
+#standard python libraies
 import sys
 import getopt
 import os
 import socket
 import logging
 import json
-
 from datetime import datetime
+
+#Fabric for ssh connections
+
+from fabric import tasks
+from fabric.api import run
+from fabric.api import env
+from fabric.api import hosts, roles, run, execute, task, parallel,runs_once
+from fabric.network import disconnect_all
 
 __appname__='healthcheck'
 __version__='1.0.0'
 __author__='mudit.mishra@sas.com'
+
+#Fabric setup
+env.user = 'sas'
+#env.password = 'mypassword' #ssh password for user
+# or, specify path to server private key here:
+env.key_filename = '/vagrant/va73_dist/ssh_keys/id_rsa'
 
 def setupLogging(default_level=logging.INFO):
     logging.basicConfig(level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -119,18 +139,18 @@ def configValid(configFile):
               return True
 
 class HealthCheckApplication(object):
-    def __init__(self,environment,level,name,type,host,port,protocol):
+    def __init__(self,environment,level,name,type,hosts,port,protocol):
         self.type=type
         self.environment=environment
         self.level=environment
         self.name=name
         self.protocol=protocol
-        self.host=host
+        self.hosts=hosts
         self.port=port
         self.timeoutseconds=30
 
 class HealthCheckStatus(object):
-    def __init__(self,host,application,application_type,type,value,timestamp,message,errormessage):
+    def __init__(self,hosts,application,application_type,type,value,timestamp,message,errormessage):
         self.application=application
         self.application_type=application_type
         self.type=type
@@ -138,11 +158,11 @@ class HealthCheckStatus(object):
         self.message=message
         self.errormessage=errormessage
         self.timestamp=timestamp
-        self.host=host
+        self.hosts=hosts
 
     def asDict(self):
         _dict_status={}
-        _dict_status["host"]=self.host
+        _dict_status["hosts"]=self.hosts
         _dict_status["application_type"]=self.application_type
         _dict_status["application"]=self.application
         _dict_status["type"]=self.type
@@ -161,11 +181,10 @@ class HealthCheckConfig(object):
             with open(configFile) as f:
                 config_data=json.load(f)
                 self.initialize(config_data)
-        else:
-            log.info("HealthCheckConfig intialization failed as Configuration File %s is invalid" % (configFile))
 
     def initialize(self,config):
         log = logging.getLogger('HealthCheckConfig.initialize')
+        log.debug("** HealthCheck intialization started **")
         for config_key in config:
             if config_key == 'env':
                 for environment in config[config_key]:
@@ -175,30 +194,39 @@ class HealthCheckConfig(object):
                                     for application in environment[environment_key]:
                                         if application["enabled"].upper() == 'YES': #Check if Application check is enabled in Configuraiton file
                                             for name in application['apps']:
-                                                if application['hosts'] and isinstance(application['hosts'], list):
-                                                    for host in application['hosts']:
-                                                        self.applications.append(HealthCheckApplication(environment['name'],
-                                                                                 environment['level'],
-                                                                                 name,
-                                                                                 application['type'],
-                                                                                 host,
-                                                                                 application['port'],
-                                                                                 application['protocol']
-                                                                                 ))
-                                                else:
-                                                    self.applications.append(HealthCheckApplication(environment['name'],
-                                                                             environment['level'],
-                                                                             name,
-                                                                             application['type'],
-                                                                             application['hosts'],
-                                                                             application['port'],
-                                                                             application['protocol']
-                                                                             ))
+                                                self.applications.append(HealthCheckApplication(environment['name'],
+                                                                         environment['level'],
+                                                                         name,
+                                                                         application['type'],
+                                                                         application['hosts'],
+                                                                         application['port'],
+                                                                         application['protocol']
+                                                                         ))
                                         else:
                                             log.debug("Skipping Application %s in environment %s because it is not enabled in configuration file" % (application["Description"],environment["name"]))
                     else:
-                        log.debug("Skipping Environment %s because it is not enabled in configuration file" % (environment["name"]))
+                        log.debug("** Environment %s skipped **" % (environment["name"]))
+        log.debug("** HealthCheck intialization completed **")
 
+@parallel
+def checkFileMount(mount=''):
+    #log.info(env.hosts)
+    log = logging.getLogger('checkFileMount')
+    if not mount:
+        log.debug('Mount is empty')
+    else:
+        result=run("ls %s" % (mount))
+        if result:
+            return True
+        else:
+            return False
+
+def isFilemountAvailable():
+    if hosts:
+        disk_output = tasks.execute(checkFileMount)
+        return disk_output
+    else:
+        return []
 
 class Healthcheck(object):
         def __init__(self,configFile):
@@ -215,11 +243,13 @@ class Healthcheck(object):
             if self.hc_config.applications:
                 log.info("** Status check begins **")
                 for application in self.hc_config.applications:
+                    log.debug("Environment: %s Application: %s Hosts: %s" % (application.environment, application.name,application.hosts))
                     if application.type.upper() == 'WEBAPP':
-                        log.debug("Environment: %s Application: %s" % (application.environment,application.name))
-                        self.status_dict["output"].append(HealthCheckStatus(application.host,application.name,application.type,'Availability','True','20170523','Success','200 OK').asDict())
+                        #log.debug("Environment: %s Application: %s" % (application.environment,application.name))
+                        self.status_dict["output"].append(HealthCheckStatus(application.hosts,application.name,application.type,'Availability','True','20170523','Success','200 OK').asDict())
                     elif application.type.upper() == 'DISK':
-                        self.status_dict["output"].append(HealthCheckStatus(application.host,application.name,application.type,'Availability','True','20170523','Success','Responding').asDict())
+                        isFilemountAvailable()
+                        self.status_dict["output"].append(HealthCheckStatus(application.hosts,application.name,application.type,'Availability','True','20170523','Success','Responding').asDict())
                     else:
                         log.info("Invalid Application Type")
                 log.info("** Status check ends **")
