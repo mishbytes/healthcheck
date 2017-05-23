@@ -240,9 +240,9 @@ def diskStatus(mount,default_timeout=30):
         command="ls %s" % (mount)
         #if run("ls %s" % (mount),timeout=5):
         try:
-            log.info("Running \'%s\' on host %s  Command timeout %d seconds" % (command,env.host_string,default_timeout))
+            log.info(">>>>>>>>>> Running \'%s\' on host %s  Command timeout %d seconds" % (command,env.host_string,default_timeout))
             result = run(command,timeout=default_timeout)
-            log.info("Finished \'%s\' on host %s  return code %d" % (command,env.host_string,result.return_code))
+            log.info(">>>>>>>>>> Finished \'%s\' on host %s  return code %d" % (command,env.host_string,result.return_code))
             if result.return_code == 0:
                 status=True
         except CommandTimeout as connerr:
@@ -256,14 +256,16 @@ def diskStatus(mount,default_timeout=30):
     return status
 
 
-def getDiskStatus(hosts_list,mountpath):
+def getDiskStatus(environment,hosts_list,mountpath):
     log = logging.getLogger('getDiskStatus()')
     if hosts_list:
         env.hosts = hosts_list
         env.parallel=True
         env.eagerly_disconnect=True
         with hide('everything'):
+            log.info(">> BEGIN: Environment: %s Disk: %s check" %(environment,mountpath))
             disk_output = tasks.execute(diskStatus,mountpath)
+            log.info(">> END: Environment: %s Disk: %s check" %(environment,mountpath))
             disconnect_all() # Call this when you are done, or get an ugly exception!
         return disk_output
     else:
@@ -287,7 +289,8 @@ class Healthcheck(object):
             if self.hc_config.applications:
                 log.info("** Status check begins **")
                 for application in self.hc_config.applications:
-                    log.debug("Environment: %s Application: %s Hosts: %s" % (application.environment, application.name,application.hosts))
+                    log.debug("Environment: %s Application: %s Hosts: %s" % (application.environment,
+                                                                             application.name,application.hosts))
                     if application.type.upper() == 'WEBAPP':
                         #log.debug("Environment: %s Application: %s" % (application.environment,application.name))
                         self.outputAppend(HealthCheckStatus(application.hosts,
@@ -299,7 +302,7 @@ class Healthcheck(object):
                                                             'Success',
                                                             '200 OK').asDict())
                     elif application.type.upper() == 'DISK':
-                        status_value=getDiskStatus(application.hosts,application.name)
+                        status_value=getDiskStatus(application.environment,application.hosts,application.name)
                         self.outputAppend(HealthCheckStatus(application.hosts,
                                                             application.name,
                                                             application.type,
