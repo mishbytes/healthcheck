@@ -11,8 +11,8 @@ __appname__='healthcheck'
 __version__='1.0.0'
 __author__='mudit.mishra@sas.com'
 
-def setupLogging():
-    logging.basicConfig(level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+def setupLogging(default_level=logging.INFO):
+    logging.basicConfig(level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 def getHostName():
     if socket.gethostname().find('.')>=0:
@@ -52,24 +52,23 @@ def configValid(configFile):
                                          """
                                          In TOP > env
                                          """
-                                         log.info("Checking settings for Environment: %s  Level: %s" % (config_env_item['name'],config_env_item['level']))
-                                         FOUND_SETTINGS=False
+                                         log.debug("Checking settings for Environment: %s  Level: %s" % (config_env_item['name'],config_env_item['level']))
+                                         FOUND_APPLICATIONS=False
                                          for config_env_key in config_env_item:
                                                 """
                                                 In TOP > env > 'environment name'
                                                 """
 
-                                                if config_env_key in CONFIG_LEVEL2_MUST_KEYS and not FOUND_APPLICATIONS: #Look for 'SETTINGS' key
+                                                if config_env_key in CONFIG_LEVEL2_MUST_KEYS and not FOUND_APPLICATIONS: #Look for 'Applications' key
                                                       """
-                                                      In TOP > env > 'environment name' > Settings
+                                                      In TOP > env > 'environment name' > Applications
                                                       """
                                                       FOUND_APPLICATIONS=True #Key found
-                                                      log.debug("Environment Key Name %s" % (config_env_key))
                                                       for config_env_applications_key in config_env_item[config_env_key]:
                                                             """
                                                             In TOP > env > 'environment name' > Applications > values'
                                                             """
-                                                            log.debug("Application %s" % (config_env_applications_key))
+                                                            log.debug("Application ** %s **" % (config_env_applications_key['Description']))
 
                                                             """
                                                             Check if 'must' keys exist in settings - if not then break
@@ -78,6 +77,7 @@ def configValid(configFile):
                                                                   if key in CONFIG_LEVEL3_MUST_KEYS:
                                                                         CONFIG_KEY_FOUND.append(key)
 
+                                                            log.debug("Number of valid keys %d" % (len(CONFIG_LEVEL3_MUST_KEYS)))
                                                             log.debug("Number of keys found %d" % (len(CONFIG_KEY_FOUND)))
 
                                                             """
@@ -85,17 +85,21 @@ def configValid(configFile):
                                                             and declare configuration file as invalid
                                                             """
                                                             if not (len(CONFIG_KEY_FOUND) == len(CONFIG_LEVEL3_MUST_KEYS)):
+                                                                  log.debug("Number of keys did not match")
+                                                                  log.debug("*** INVALID CONFIGURATION FILE ***")
                                                                   INVALID_CONFIG_FILE=True
                                                                   break
+                                                            else:
+                                                                log.debug("Number of keys matched")
 
                                                             CONFIG_KEY_FOUND=[]
 
                                                 else:
                                                       continue
                                          if INVALID_CONFIG_FILE:
-                                               log.info("Failed to validate Environment: %s  Level: %s " % (config_env_item['name'],config_env_item['level']))
+                                               log.debug("Failed to validate Environment: %s  Level: %s " % (config_env_item['name'],config_env_item['level']))
                                          else:
-                                               log.info("Successfully validated Environment: %s  Level: %s " % (config_env_item['name'],config_env_item['level']))
+                                               log.debug("Successfully validated Environment: %s  Level: %s " % (config_env_item['name'],config_env_item['level']))
                                    break
                              else:
                                    continue
@@ -158,40 +162,42 @@ class HealthCheckConfig(object):
                 config_data=json.load(f)
                 self.initialize(config_data)
         else:
-            log.info("Stop executing as Configuration File %s is invalid" % (configFile))
+            log.info("HealthCheckConfig intialization failed as Configuration File %s is invalid" % (configFile))
 
     def initialize(self,config):
         log = logging.getLogger('HealthCheckConfig.initialize')
         for config_key in config:
             if config_key == 'env':
                 for environment in config[config_key]:
-                    for environment_key in environment:
-                        if environment['enabled'].upper() == 'YES': #Check if Environment check is enabled in Configuraiton file
-                            if environment_key == 'applications':
-                                for application in environment[environment_key]:
-                                    if application["enabled"].upper() == 'YES': #Check if Application check is enabled in Configuraiton file
-                                        for name in application['apps']:
-                                            if application['hosts'] and isinstance(application['hosts'], list):
-                                                for host in application['hosts']:
+                    if environment['enabled'].upper() == 'YES': #Check if Environment check is enabled in Configuraiton file
+                        for environment_key in environment:
+                                if environment_key == 'applications':
+                                    for application in environment[environment_key]:
+                                        if application["enabled"].upper() == 'YES': #Check if Application check is enabled in Configuraiton file
+                                            for name in application['apps']:
+                                                if application['hosts'] and isinstance(application['hosts'], list):
+                                                    for host in application['hosts']:
+                                                        self.applications.append(HealthCheckApplication(environment['name'],
+                                                                                 environment['level'],
+                                                                                 name,
+                                                                                 application['type'],
+                                                                                 host,
+                                                                                 application['port'],
+                                                                                 application['protocol']
+                                                                                 ))
+                                                else:
                                                     self.applications.append(HealthCheckApplication(environment['name'],
                                                                              environment['level'],
                                                                              name,
                                                                              application['type'],
-                                                                             host,
+                                                                             application['hosts'],
                                                                              application['port'],
                                                                              application['protocol']
                                                                              ))
-                                            else:
-                                                self.applications.append(HealthCheckApplication(environment['name'],
-                                                                         environment['level'],
-                                                                         name,
-                                                                         application['type'],
-                                                                         application['hosts'],
-                                                                         application['port'],
-                                                                         application['protocol']
-                                                                         ))
-                                    else:
-                                        log.info("%s is disabled" %(application["Description"]))
+                                        else:
+                                            log.debug("Skipping Application %s in environment %s because it is not enabled in configuration file" % (application["Description"],environment["name"]))
+                    else:
+                        log.debug("Skipping Environment %s because it is not enabled in configuration file" % (environment["name"]))
 
 
 class Healthcheck(object):
@@ -207,14 +213,16 @@ class Healthcheck(object):
             log = logging.getLogger('Healthcheck.getStatus')
             status_output=[]
             if self.hc_config.applications:
+                log.info("** Status check begins **")
                 for application in self.hc_config.applications:
                     if application.type.upper() == 'WEBAPP':
-                        log.debug("Checking Environment: %s Application: %s" % (application.environment,application.name))
+                        log.debug("Environment: %s Application: %s" % (application.environment,application.name))
                         self.status_dict["output"].append(HealthCheckStatus(application.host,application.name,application.type,'Availability','True','20170523','Success','200 OK').asDict())
                     elif application.type.upper() == 'DISK':
                         self.status_dict["output"].append(HealthCheckStatus(application.host,application.name,application.type,'Availability','True','20170523','Success','Responding').asDict())
                     else:
                         log.info("Invalid Application Type")
+                log.info("** Status check ends **")
             else:
                 log.info("No applications loaded")
 
@@ -278,9 +286,12 @@ def main(argv):
             usage()
             sys.exit(2)
 
-    print __appname__,__version__,config,out
+    hostname=getHostName()
+    print "Host: %s running %s version: %s" % (hostname,__appname__,__version__)
+    #print options
+    print "-config %s  -out %s " % (config,out)
     if (config and out):
-        setupLogging()
+        setupLogging(default_level=logging.DEBUG)
         log = logging.getLogger('healthcheck')
         hc=Healthcheck(config)
         hc.getStatus()
