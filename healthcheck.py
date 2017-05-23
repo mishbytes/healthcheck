@@ -1,8 +1,11 @@
 """
 __appname__='healthcheck'
 __version__='1.0.0'
-__author__='mudit.mishra@sas.com'
 """
+
+__appname__='healthcheck'
+__version__='1.0.0'
+
 
 #standard python libraies
 import sys
@@ -24,12 +27,6 @@ from fabric.exceptions import CommandTimeout
 from fabric.exceptions import NetworkError
 
 
-
-
-__appname__='healthcheck'
-__version__='1.0.0'
-__author__='mudit.mishra@sas.com'
-
 #Fabric setup
 env.user = 'sas'
 #env.password = 'mypassword' #ssh password for user
@@ -41,6 +38,9 @@ env.key_filename = '/vagrant/va73_dist/ssh_keys/id_rsa'
 #instead of blocking on user input forever when unforeseen circumstances arise.
 env.abort_on_prompts=True
 
+#a Boolean setting determining whether Fabric exits when detecting
+#errors on the remote end
+env.warn_only=True
 
 def setupLogging(default_level=logging.INFO):
     logging.basicConfig(level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -61,7 +61,7 @@ def getHostName():
     return name
 
 def configValid(configFile):
-        log = logging.getLogger('configValid')
+        log = logging.getLogger('configValid()')
         CONFIG_LEVEL1_MUST_KEYS=['env']
         CONFIG_LEVEL2_MUST_KEYS=['applications']
         CONFIG_LEVEL3_MUST_KEYS=['protocol','hosts','port','user','password','apps','type','enabled']
@@ -246,12 +246,15 @@ def diskStatus(mount,default_timeout=30):
             log.info("Running \'%s\' on host %s  Command timeout %d seconds" % (command,env.host_string,default_timeout))
             result = run(command,timeout=default_timeout)
             log.info("Finished \'%s\' on host %s  return code %d" % (command,env.host_string,result.return_code))
-            status=True
-        except CommandTimeout as err:
-            log.error("Disk %s did not respond %s" % (err))
+            if result.return_code == 0:
+                status=True
+        except CommandTimeout as connerr:
+            log.error("Disk %s did not respond %s" % (connerr))
         except NetworkError as neterr:
             log.error("Unable to connect to %s" % (env.host_string))
             log.error(neterr)
+        except Exception as err:
+            log.error("Unknown Error occurred in diskStatus() %s" % (err))
 
     return status
 
@@ -262,7 +265,7 @@ def getDiskStatus(hosts_list,mountpath):
         env.hosts = hosts_list
         env.parallel=True
         env.eagerly_disconnect=True
-        with settings(warn_only=True,abort_on_prompts=True),hide('everything'):
+        with hide('everything'):
             disk_output = tasks.execute(diskStatus,mountpath)
             disconnect_all() # Call this when you are done, or get an ugly exception!
         return disk_output
