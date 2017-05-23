@@ -222,14 +222,6 @@ class HealthCheckConfig(object):
                         log.debug("** Environment %s skipped **" % (environment["name"]))
         log.debug("** HealthCheck intialization completed **")
 
-
-
-
-class FabricException(Exception):
-    def __init__(self, message, result):
-        Exception.__init__(self, message)
-        self.result = result
-
 def diskStatus(mount,default_timeout=30):
     #log.info(env.hosts)
     log = logging.getLogger('diskStatus()')
