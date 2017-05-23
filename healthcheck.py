@@ -18,8 +18,13 @@ from datetime import datetime
 from fabric import tasks
 from fabric.api import run
 from fabric.api import env
-from fabric.api import hosts, roles, run, execute, task, parallel,runs_once
+from fabric.api import hosts, roles, run, execute, task, parallel,runs_once,settings,hide
 from fabric.network import disconnect_all
+from fabric.exceptions import CommandTimeout
+from fabric.exceptions import NetworkError
+
+
+
 
 __appname__='healthcheck'
 __version__='1.0.0'
@@ -31,8 +36,19 @@ env.user = 'sas'
 # or, specify path to server private key here:
 env.key_filename = '/vagrant/va73_dist/ssh_keys/id_rsa'
 
+#When True, Fabric will run in a non-interactive mode
+#This allows users to ensure a Fabric session will always terminate cleanly
+#instead of blocking on user input forever when unforeseen circumstances arise.
+env.abort_on_prompts=True
+
+
 def setupLogging(default_level=logging.INFO):
     logging.basicConfig(level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+def disableParamikoLogging():
+    logging.getLogger("paramiko").setLevel(logging.WARNING)
+
+disableParamikoLogging()
 
 def getHostName():
     if socket.gethostname().find('.')>=0:
@@ -168,7 +184,8 @@ class HealthCheckStatus(object):
         _dict_status["type"]=self.type
         _dict_status["value"]=self.value
         _dict_status["message"]=self.message
-        _dict_status["errormessage"]=self.message
+        _dict_status["errormessage"]=self.errormessage
+        _dict_status["timestamp"]=self.timestamp
         return _dict_status
 
 class HealthCheckConfig(object):
@@ -183,7 +200,7 @@ class HealthCheckConfig(object):
                 self.initialize(config_data)
 
     def initialize(self,config):
-        log = logging.getLogger('HealthCheckConfig.initialize')
+        log = logging.getLogger('HealthCheckConfig.initialize()')
         log.debug("** HealthCheck intialization started **")
         for config_key in config:
             if config_key == 'env':
@@ -208,22 +225,46 @@ class HealthCheckConfig(object):
                         log.debug("** Environment %s skipped **" % (environment["name"]))
         log.debug("** HealthCheck intialization completed **")
 
-@parallel
-def checkFileMount(mount=''):
+
+
+
+class FabricException(Exception):
+    def __init__(self, message, result):
+        Exception.__init__(self, message)
+        self.result = result
+
+def diskStatus(mount,default_timeout=30):
     #log.info(env.hosts)
-    log = logging.getLogger('checkFileMount')
+    log = logging.getLogger('diskStatus()')
+    status=False
     if not mount:
         log.debug('Mount is empty')
     else:
-        result=run("ls %s" % (mount))
-        if result:
-            return True
-        else:
-            return False
+        command="ls %s" % (mount)
+        #if run("ls %s" % (mount),timeout=5):
+        try:
+            log.info("Running \'%s\' on host %s  Command timeout %d seconds" % (command,env.host_string,default_timeout))
+            result = run(command,timeout=default_timeout)
+            log.info("Finished \'%s\' on host %s  return code %d" % (command,env.host_string,result.return_code))
+            status=True
+        except CommandTimeout as err:
+            log.error("Disk %s did not respond %s" % (err))
+        except NetworkError as neterr:
+            log.error("Unable to connect to %s" % (env.host_string))
+            log.error(neterr)
 
-def isFilemountAvailable():
-    if hosts:
-        disk_output = tasks.execute(checkFileMount)
+    return status
+
+
+def getDiskStatus(hosts_list,mountpath):
+    log = logging.getLogger('getDiskStatus()')
+    if hosts_list:
+        env.hosts = hosts_list
+        env.parallel=True
+        env.eagerly_disconnect=True
+        with settings(warn_only=True,abort_on_prompts=True),hide('everything'):
+            disk_output = tasks.execute(diskStatus,mountpath)
+            disconnect_all() # Call this when you are done, or get an ugly exception!
         return disk_output
     else:
         return []
@@ -237,8 +278,11 @@ class Healthcheck(object):
             self.status_output=[]
             self.hc_config=HealthCheckConfig(configFile)
 
+        def outputAppend(self,data):
+            self.status_dict["output"].append(data)
+
         def getStatus(self):
-            log = logging.getLogger('Healthcheck.getStatus')
+            log = logging.getLogger('Healthcheck.getStatus()')
             status_output=[]
             if self.hc_config.applications:
                 log.info("** Status check begins **")
@@ -246,10 +290,24 @@ class Healthcheck(object):
                     log.debug("Environment: %s Application: %s Hosts: %s" % (application.environment, application.name,application.hosts))
                     if application.type.upper() == 'WEBAPP':
                         #log.debug("Environment: %s Application: %s" % (application.environment,application.name))
-                        self.status_dict["output"].append(HealthCheckStatus(application.hosts,application.name,application.type,'Availability','True','20170523','Success','200 OK').asDict())
+                        self.outputAppend(HealthCheckStatus(application.hosts,
+                                                            application.name,
+                                                            application.type,
+                                                            'Availability',
+                                                            'True',
+                                                            str(datetime.now()),
+                                                            'Success',
+                                                            '200 OK').asDict())
                     elif application.type.upper() == 'DISK':
-                        isFilemountAvailable()
-                        self.status_dict["output"].append(HealthCheckStatus(application.hosts,application.name,application.type,'Availability','True','20170523','Success','Responding').asDict())
+                        status_value=getDiskStatus(application.hosts,application.name)
+                        self.outputAppend(HealthCheckStatus(application.hosts,
+                                                            application.name,
+                                                            application.type,
+                                                            'Availability',
+                                                            status_value,
+                                                            str(datetime.now()),
+                                                            '',
+                                                            '').asDict())
                     else:
                         log.info("Invalid Application Type")
                 log.info("** Status check ends **")
@@ -257,7 +315,7 @@ class Healthcheck(object):
                 log.info("No applications loaded")
 
         def save(self,type="",filename=''):
-            log = logging.getLogger('Healthcheck.save')
+            log = logging.getLogger('Healthcheck.save()')
             TYPE_VALID_VALUES=["log","file"]
             if self.status_dict:
                 if type in TYPE_VALID_VALUES:
@@ -321,7 +379,7 @@ def main(argv):
     #print options
     print "-config %s  -out %s " % (config,out)
     if (config and out):
-        setupLogging(default_level=logging.DEBUG)
+        setupLogging(default_level=logging.INFO)
         log = logging.getLogger('healthcheck')
         hc=Healthcheck(config)
         hc.getStatus()
