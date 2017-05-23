@@ -18,6 +18,98 @@ def getHostName():
         name=socket.gethostbyaddr(socket.gethostname())[0]
     return name
 
+def validateConfig(configFile):
+
+    CONFIG_LEVEL1_MUST_KEYS=['env']
+    CONFIG_LEVEL2_MUST_KEYS=['settings']
+    CONFIG_LEVEL3_MUST_KEYS=['protocol','hosts','port','user','password','apps','type']
+    CONFIG_KEY_FOUND=[]
+    INVALID_CONFIG_FILE=False
+    FOUND_ENV=False
+    FOUND_SETTINGS=False
+    
+    if configFileExist(configFile):
+    
+        try:
+              log.info("Validating configuration file %s" % (configFile))
+              with open(configFile) as input_json:
+                #Load configuration
+                config = json.load(input_json)
+              
+              for config_env in config.keys(): #Iterate environments in configuration file
+                     """
+                     In TOP section
+                     """
+                     if config_env in CONFIG_LEVEL1_MUST_KEYS and not FOUND_ENV :
+                           FOUND_ENV=True
+                           for config_env_item in config[config_env]: #Iterate Environment attributes
+                                 """
+                                 In TOP > env
+                                 """
+                                 log.info("Checking settings for Environment: %s  Level: %s" % (config_env_item['name'],config_env_item['level']))
+                                 FOUND_SETTINGS=False
+                                 for config_env_key in config_env_item:
+                                        """
+                                        In TOP > env > 'environment name' 
+                                        """
+                                        
+                                        if config_env_key in CONFIG_LEVEL2_MUST_KEYS and not FOUND_SETTINGS: #Look for 'SETTINGS' key 
+                                              """
+                                              In TOP > env > 'environment name' > Settings
+                                              """
+                                              FOUND_SETTINGS=True #Key found
+                                              log.debug("Environment Key Name %s" % (config_env_key))
+                                              for config_env_settings_key in config_env_item[config_env_key]:
+                                                    """
+                                                    In TOP > env > 'environment name' > Settings > values'
+                                                    """
+                                                    log.debug("Settings %s" % (config_env_settings_key))
+                                                    
+                                                    """
+                                                    Check if 'must' keys exist in settings - if not then break
+                                                    """
+                                                    for key in config_env_settings_key: #Iterate each key in settings
+                                                          if key in CONFIG_LEVEL3_MUST_KEYS:
+                                                                CONFIG_KEY_FOUND.append(key)
+                                                          
+                                                    log.debug("Number of keys found %d" % (len(CONFIG_KEY_FOUND)))
+                                              
+                                                    """
+                                                    if atleast one 'must' keys not found then break from the loop
+                                                    and declare configuration file as invalid
+                                                    """
+                                                    if not (len(CONFIG_KEY_FOUND) == len(CONFIG_LEVEL3_MUST_KEYS)):
+                                                          INVALID_CONFIG_FILE=True
+                                                          break
+                                                    
+                                                    CONFIG_KEY_FOUND=[]
+                                              
+                                        else:
+                                              continue
+                                 if INVALID_CONFIG_FILE:
+                                       log.info("Failed to validate Environment: %s  Level: %s " % (config_env_item['name'],config_env_item['level']))
+                                 else:
+                                       log.info("Successfully validated Environment: %s  Level: %s " % (config_env_item['name'],config_env_item['level']))
+                           break
+                     else:
+                           continue
+                                                    
+                                        
+                         
+                     
+        except Exception,e:
+               INVALID_CONFIG_FILE=True
+               log.error('Something went wrong while reading web configuration json file %s' % (configFile))
+               log.error(e,exc_info=True)
+    else:
+      log.info("Configuration File %s does not exist" % (configFile))
+      
+    
+    if INVALID_CONFIG_FILE:
+          return False
+    else:
+          return True
+        
 class HealthCheckApplication(object):
     def __init__(self,environment,level,name,type,host,port,protocol):
         self.type=type
