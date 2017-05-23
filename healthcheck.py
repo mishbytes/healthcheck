@@ -1,27 +1,27 @@
-import json
-import socket
-from datetime import datetime
+import sys
+import getopt
 import os
+import socket
 import logging
+import json
 
+from datetime import datetime
 
-logging.basicConfig(level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-log = logging.getLogger('healthcheck')
+__appname__='healthcheck'
+__version__='1.0.0'
+__author__='mudit.mishra@sas.com'
 
-def webAppAvailability(name):
-    status={}
-    status['name']=name
-    status['measure_type']="Availability"
-    status['measure_value']="False"
-    status['timestamp']=""
-    status['errormessage']="Internal Server Error 500"
-    return status
+def setupLogging():
+    logging.basicConfig(level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 def getHostName():
     if socket.gethostname().find('.')>=0:
         name=socket.gethostname()
     else:
-        name=socket.gethostbyaddr(socket.gethostname())[0]
+        try:
+            name=socket.gethostbyaddr(socket.gethostname())[0]
+        except socket.gaierror:
+            name=socket.gethostname()
     return name
 
 def configValid(configFile):
@@ -193,6 +193,7 @@ class HealthCheckConfig(object):
                                     else:
                                         log.info("%s is disabled" %(application["Description"]))
 
+
 class Healthcheck(object):
         def __init__(self,configFile):
             self.status_dict={}
@@ -202,13 +203,13 @@ class Healthcheck(object):
             self.status_output=[]
             self.hc_config=HealthCheckConfig(configFile)
 
-
         def getStatus(self):
             log = logging.getLogger('Healthcheck.getStatus')
             status_output=[]
             if self.hc_config.applications:
                 for application in self.hc_config.applications:
                     if application.type.upper() == 'WEBAPP':
+                        log.debug("Checking Environment: %s Application: %s" % (application.environment,application.name))
                         self.status_dict["output"].append(HealthCheckStatus(application.host,application.name,application.type,'Availability','True','20170523','Success','200 OK').asDict())
                     elif application.type.upper() == 'DISK':
                         self.status_dict["output"].append(HealthCheckStatus(application.host,application.name,application.type,'Availability','True','20170523','Success','Responding').asDict())
@@ -217,18 +218,77 @@ class Healthcheck(object):
             else:
                 log.info("No applications loaded")
 
-        def save(self,filename):
+        def save(self,type="",filename=''):
             log = logging.getLogger('Healthcheck.save')
-            if not self.status_dict:
-                log.info(json.dumps(self.status_dict,indent=4))
-                log.info('Saving to File %s' % (filename))
+            TYPE_VALID_VALUES=["log","file"]
+            if self.status_dict:
+                if type in TYPE_VALID_VALUES:
+                    if type.upper() == 'LOG':
+                        log.info(json.dumps(self.status_dict,indent=4))
+                    elif type.upper() == 'FILE':
+                        if filename:
+                            log.info('Writing status to File %s' % (filename))
+                            try:
+                               with open(filename, 'w') as f:
+                                   json.dump(self.status_dict, f,indent=6)
+                            except IOError, msg:
+                               log.error("Error: can\'t write to file %s" % (filename))
+                               log.error(msg)
+                            else:
+                               log.info("Written content in %s successfully" % (filename))
+                        else:
+                            log.debug("Filename is empty")
+                else:
+                    log.debug("Save disabled")
+            else:
+                log.info("Empty status, nothing to save")
 
 
-hc = Healthcheck(os.path.abspath('config.json'))
-hc.getStatus()
-hc.save('f')
+def help():
+  help = """
+        -h --help                               Help
+        -config -c my.config                    Configuration File
+        -logconfig -c logging.properties        Log configuration File
+      """
+  print help
 
 
-#hc.display()
-#hc.status('WebApp')
-#hc.display()
+def main(argv):
+    fname = ""
+    out=""
+    config=""
+    try:
+        options, remainders = getopt.getopt(argv, 'h',["config=","out="])
+        if not options:
+            help()
+            sys.exit()
+    except getopt.GetoptError as err:
+        print err
+        help()
+        sys.exit(2)
+    for opt, arg in options:
+        if opt in ("-h", "--help"):
+            help()
+            sys.exit()
+        elif opt in ("--config"):
+            config=os.path.abspath(arg)
+        elif opt in ("--out"):
+            out = os.path.abspath(arg)
+        else:
+            usage()
+            sys.exit(2)
+
+    print __appname__,__version__,config,out
+    if (config and out):
+        setupLogging()
+        log = logging.getLogger('healthcheck')
+        hc=Healthcheck(config)
+        hc.getStatus()
+        hc.save(type='file',filename=out)
+    else:
+      usage()
+      sys.exit(2)
+########################################
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
