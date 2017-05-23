@@ -345,9 +345,9 @@ class Healthcheck(object):
 
 def help():
   help = """
-        -h --help                               Help
-        -config -c my.config                    Configuration File
-        -logconfig -c logging.properties        Log configuration File
+        -h --help                    Help
+        -config    config.json       Configuration File
+        -out       status.json       Output File
       """
   print help
 
