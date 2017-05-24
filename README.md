@@ -4,15 +4,12 @@
 
 
 - Requires Distributions
--- pyasn1 (>=0.1.7)
--- cryptography (>=1.1) >> cffi>=1.4.1
--- paramiko (>=1.10,<3.0)
-
-
-the Python programming language;
-https://pypi.python.org/pypi/Fabric/1.13.2
-the Python Paramiko SSH library;
-and Paramiko’s dependency, the PyCrypto cryptography library.
-the jinj2 library
-and jinja2's dependency, the marksupsafe library
+	yum install python-devel.x86_64
+	yum install gcc
+	ecdsa-0.13
+	pycrypto-2.6.1
+	paramiko-1.18.2 (paramiko >= 2.0 not supported)
+	Fabric-1.13.2
+  jinj2
+  markupsafe
 
