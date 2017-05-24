@@ -5,7 +5,7 @@
 
 - Requires Distributions
 -- pyasn1 (>=0.1.7)
--- cryptography (>=1.1)
+-- cryptography (>=1.1) >> cffi>=1.4.1
 -- paramiko (>=1.10,<3.0)
 
 
