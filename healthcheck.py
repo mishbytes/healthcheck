@@ -30,6 +30,7 @@ DEFAULT_CONFIG_FILE='config.json'
 DEFAUTL_LOGGING_LEVEL='DEBUG'
 DEFAUTL_LOG_FILENAME='healthcheck.log'
 START_COMMANDS = ['start', 'restart']
+DEFAULT_KILL_TIMEOUT=10
 
 #PATHs
 PROJECT_DIR=os.path.dirname(os.path.abspath(__file__))
@@ -39,7 +40,8 @@ PROJECT_LOG=PROJECT_DIR + '/' + DEFAUTL_LOG_FILENAME
 
 
 #Interval
-DEFAULT_CHECK_INTERVAL=1*60*60 #1 Hour
+#DEFAULT_CHECK_INTERVAL=1*60*60 #1 Hour
+DEFAULT_CHECK_INTERVAL=120 #Seconds
 DEFAULT_CHECK_FREQUENCY=2
 
 
@@ -60,10 +62,12 @@ setupLogging(default_level=DEFAUTL_LOGGING_LEVEL)
 print "Log messages written to %s" % PROJECT_LOG
 log = logging.getLogger(__name__)
 
-def disableParamikoLogging():
-    logging.getLogger("paramiko").setLevel(logging.WARNING)
 
-disableParamikoLogging()
+def disableLogging():
+    logging.getLogger("paramiko").setLevel(logging.WARNING)
+    logging.getLogger("utils").setLevel(logging.WARNING)
+
+disableLogging()
 
 def getHostName():
     if socket.gethostname().find('.')>=0:
@@ -161,47 +165,59 @@ class Healthcheck(object):
             self.status_dict["timestamp"]=str(datetime.now())
             self.status_dict["output"]=[]
             self.status_output=[]
+            self.running=False
+            self.start_event=True
             self.hc_config=HealthCheckConfig(configFile)
 
         def addStatus(self,data):
             self.status_dict["output"].append(data)
 
         def start(self):
-            log = logging.getLogger('Healthcheck.getStatus()')
-            status_output=[]
-            if self.hc_config.applications:
-                log.info("** Status check begins **")
-                for application in self.hc_config.applications:
-                    log.debug("Environment: %s Application: %s Hosts: %s" % (application.environment,
-                                                                             application.name,application.hosts))
-                    if application.type.upper() == 'WEBAPP':
-                        #log.debug("Environment: %s Application: %s" % (application.environment,application.name))
-                        #sasLogon(environment,protocol,host,port,application,user,password)
-                        _status=sasLogon(application.environment,application.protocol,application.hosts,application.port,application.name,application.user,application.password)
-                        self.addStatus(HealthCheckStatus(application.hosts,
-                                                            application.name,
-                                                            application.type,
-                                                            'Availability',
-                                                            _status["value"],
-                                                            str(datetime.now()),
-                                                            _status["message"]).asDict())
-                    elif application.type.upper() == 'DISK':
-                        _status=getDiskStatus(application.environment,application.hosts,application.name)
-                        self.addStatus(HealthCheckStatus(application.hosts,
-                                                            application.name,
-                                                            application.type,
-                                                            'Availability',
-                                                            _status,
-                                                            str(datetime.now()),
-                                                            '').asDict())
+            if self.start_event:
+                self.running=True
+                log = logging.getLogger('Healthcheck.getStatus()')
+                status_output=[]
+                try:
+                    if self.hc_config.applications:
+                        log.info("** Status check begins **")
+                        for application in self.hc_config.applications:
+                            log.debug("Environment: %s Application: %s Hosts: %s" % (application.environment,
+                                                                                     application.name,application.hosts))
+                            if application.type.upper() == 'WEBAPP':
+                                #log.debug("Environment: %s Application: %s" % (application.environment,application.name))
+                                #sasLogon(environment,protocol,host,port,application,user,password)
+                                _status=sasLogon(application.environment,application.protocol,application.hosts,application.port,application.name,application.user,application.password)
+                                self.addStatus(HealthCheckStatus(application.hosts,
+                                                                    application.name,
+                                                                    application.type,
+                                                                    'Availability',
+                                                                    _status["value"],
+                                                                    str(datetime.now()),
+                                                                    _status["message"]).asDict())
+                            elif application.type.upper() == 'DISK':
+                                _status=getDiskStatus(application.environment,application.hosts,application.name)
+                                self.addStatus(HealthCheckStatus(application.hosts,
+                                                                    application.name,
+                                                                    application.type,
+                                                                    'Availability',
+                                                                    _status,
+                                                                    str(datetime.now()),
+                                                                    '').asDict())
+                            else:
+                                log.info("Invalid Application Type")
+                        log.info("** Status check ends **")
                     else:
-                        log.info("Invalid Application Type")
-                log.info("** Status check ends **")
+                        log.info("No applications loaded")
+                except Exception as e:
+                    log.info("Exception occurred")
             else:
-                log.info("No applications loaded")
+                pass
+
 
         def stop(self):
-            raise SystemExit
+            self.start_event=False
+            #self.running=False
+            #raise SystemExit
             #sys.exit(0)
 
         def save(self,type="",filename=''):
@@ -231,6 +247,7 @@ class Healthcheck(object):
 
         def showAlerts(self):
             log = logging.getLogger('Healthcheck.showAlerts()')
+            self.running=True
             if self.status_dict:
                 for status_property in self.status_dict:
                     if status_property.upper() == "OUTPUT":
@@ -251,10 +268,11 @@ class Healthcheck(object):
 
 
 class HealthcheckAgent(Daemon):
-    log.info("healthcheck daemon started")
+    log = logging.getLogger('HealthCheckAgent')
     def __init__(self, pidfile):
         Daemon.__init__(self, pidfile)
         self.run_forever = True
+        self.start_event=True
         self.healthcheck = None
         self.check_interval = DEFAULT_CHECK_INTERVAL
         self.check_frequency = DEFAULT_CHECK_FREQUENCY
@@ -262,11 +280,26 @@ class HealthcheckAgent(Daemon):
 
     def _handle_sigterm(self, signum, frame):
         """Handles SIGTERM and SIGINT, which gracefully stops the agent."""
+        log = logging.getLogger('HealthCheckAgent._handle_sigterm()')
         log.info("Caught sigterm. Stopping run loop.")
         self.run_forever = False
+        self.start_event = False
         if self.healthcheck:
             self.healthcheck.stop()
-
+            #log.info("waiting for current healthcheck to finish")
+            t_end = time.time() + 1*60 #Two minutes
+            while time.time() < t_end:
+                if self.healthcheck.running:
+                    t_left = t_end - time.time()
+                    log.info("Waiting for current healthcheck to finish Time left %d of %d seconds" % (t_left,60) )
+                    time.sleep(5) #Sleep for 5 seconds
+                    continue
+                else:
+                    log.info("Current healthcheck stopped")
+                    break
+        if self.healthcheck.running:
+            log.info("Timed out waiting for current healthcheck to finish")
+        raise SystemExit
 
     @classmethod
     def info(cls, verbose=None):
@@ -274,7 +307,7 @@ class HealthcheckAgent(Daemon):
         return "Info"
 
     def run(self, config='config.json'):
-        log = logging.getLogger("Healcheck.run()")
+        log = logging.getLogger("HealcheckAgent.run()")
         """Main loop of the healthcheck"""
         # Gracefully exit on sigterm
         signal.signal(signal.SIGTERM, self._handle_sigterm)
@@ -291,15 +324,28 @@ class HealthcheckAgent(Daemon):
             i=1
             while i <= self.check_frequency:
                 if self.run_forever:
+                    if i > 1 :
+                        t_end=time.time() + self.check_interval
+                        while time.time() < t_end:
+                            if self.run_forever:
+                                log.info("waiting to run next event %s" % self.healthcheck.start_event)
+                                time.sleep(DEFAULT_KILL_TIMEOUT)
+                            else:
+                                break
+
                     if self.healthcheck:
-                        log.info("Starting HealthCheck")
-                        self.healthcheck.start()
-                        self.healthcheck.showAlerts()
-                        log.info("Finished HealthCheck")
+                        log.info("Starting HealthCheck instance# %d" % i)
+                        try:
+                            self.healthcheck.start()
+                            self.healthcheck.showAlerts()
+                            self.healthcheck.running=False
+                            log.info("Finished HealthCheck instance# %d" % i)
+                        finally:
+                            self.healthcheck.running=False
                     else:
                         log.error("Unable to to run HealthCheck")
-                    time.sleep(self.check_interval)
                     i+=1
+
                 else:
                     break
 
@@ -335,7 +381,6 @@ def main(argv):
         return 3
 
     if command in COMMANDS_AGENT:
-        log.info("initialize healtcheck agent")
         hcagent = HealthcheckAgent(PidFile(PID_NAME, PID_DIR).get_path())
 
     if command in START_COMMANDS:
@@ -346,16 +391,16 @@ def main(argv):
         #agent.start()
 
     elif 'stop' == command:
-        log.info('Stop')
+        log.info('Stopping Agent')
         hcagent.stop()
         #agent.stop()
 
     elif 'restart' == command:
-        log.info('Restart')
+        log.info('Restarting Agent')
         hcagent.restart()
 
     elif 'status' == command:
-        log.info('Status')
+        log.info('Checking Status')
         hcagent.status()
 
     elif 'info' == command:
