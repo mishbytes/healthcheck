@@ -38,7 +38,7 @@ PID_DIR = PROJECT_DIR
 
 
 DEFAULT_CHECK_INTERVAL=5 #seconds
-DEFAULT_CHECK_FREQUENCY=1
+DEFAULT_CHECK_FREQUENCY=2
 
 
 def setupLogging(default_level=logging.INFO):
@@ -261,7 +261,6 @@ class HealthcheckAgent(Daemon):
         """Handles SIGTERM and SIGINT, which gracefully stops the agent."""
         log.info("Caught sigterm. Stopping run loop.")
         self.run_forever = False
-        log.info(self.healthcheck)
         if self.healthcheck:
             self.healthcheck.stop()
 
