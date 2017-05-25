@@ -7,14 +7,14 @@ def validateConfig(configFile):
         log = logging.getLogger('configValid()')
         CONFIG_LEVEL1_MUST_KEYS=['env']
         """
-        env is a list with the following dictionary items
+        env is a list wit the following dictionary items
         """
         CONFIG_LEVEL2_MUST_KEYS=['applications','name','level']
         """
         applications is a list with the following dictionary items
         """
         CONFIG_LEVEL3_MUST_KEYS=['protocol','hosts','port','user','password','apps','type','enabled']
-        
+
         CONFIG_KEY_FOUND=[]
         INVALID_CONFIG_FILE=False
         FOUND_ENV=False
