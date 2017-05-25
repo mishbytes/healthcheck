@@ -1,0 +1,62 @@
+{
+      "timestamp": "2017-05-24 01:07:14.701846", 
+      "hostname": "sukmmi2", 
+      "output": [
+            {
+                  "application_type": "webapp", 
+                  "errormessage": "200 OK", 
+                  "value": "True", 
+                  "application": "SASStoredProcess", 
+                  "hosts": "aude", 
+                  "timestamp": "2017-05-24 01:07:14.702432", 
+                  "message": "Success", 
+                  "type": "Availability"
+            }, 
+            {
+                  "application_type": "webapp", 
+                  "errormessage": "200 OK", 
+                  "value": "True", 
+                  "application": "SASStudio", 
+                  "hosts": "aude", 
+                  "timestamp": "2017-05-24 01:07:14.702444", 
+                  "message": "Success", 
+                  "type": "Availability"
+            }, 
+            {
+                  "application_type": "disk", 
+                  "errormessage": "", 
+                  "value": {
+                        "192.168.56.202": true, 
+                        "192.168.56.203": true, 
+                        "192.168.56.201": true
+                  }, 
+                  "application": "/tmp", 
+                  "hosts": [
+                        "192.168.56.201", 
+                        "192.168.56.202", 
+                        "192.168.56.203"
+                  ], 
+                  "timestamp": "2017-05-24 01:07:14.947065", 
+                  "message": "", 
+                  "type": "Availability"
+            }, 
+            {
+                  "application_type": "disk", 
+                  "errormessage": "", 
+                  "value": {
+                        "192.168.56.202": true, 
+                        "192.168.56.203": true, 
+                        "192.168.56.201": true
+                  }, 
+                  "application": "/var", 
+                  "hosts": [
+                        "192.168.56.201", 
+                        "192.168.56.202", 
+                        "192.168.56.203"
+                  ], 
+                  "timestamp": "2017-05-24 01:07:15.211588", 
+                  "message": "", 
+                  "type": "Availability"
+            }
+      ]
+}

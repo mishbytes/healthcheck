@@ -3,46 +3,59 @@ __appname__='healthcheck'
 __version__='1.0.0'
 """
 
-__appname__='healthcheck'
-__version__='1.0.0'
-
+__HEALTHCHECKNAME__='healthcheck'
+__HEALTHCHECKVERSION__='1.0.0'
 
 #standard python libraies
 import sys
+import signal
 import getopt
 import os
 import socket
 import logging
 import json
+import time
 from datetime import datetime
-import httplib,urllib, urllib2, cookielib
-
-#Fabric for ssh connections
-
-from fabric import tasks
-from fabric.api import run,env, run, execute, parallel,settings,hide
-from fabric.network import disconnect_all
-from fabric.exceptions import CommandTimeout,NetworkError
 
 
-#Fabric setup
-env.user = 'srv-sasanl-m'
-#env.password = 'mypassword' #ssh password for user
-# or, specify path to server private key here:
-#env.key_filename = '/my/ssh_keys/id_rsa'
+#project
+from utils.pidfile import PidFile
+from utils.daemon import Daemon
+from check_sas import sasLogon
+from check_disk import getDiskStatus
+from config import validateConfig
 
-#When True, Fabric will run in a non-interactive mode
-#This allows users to ensure a Fabric session will always terminate cleanly
-#instead of blocking on user input forever when unforeseen circumstances arise.
-env.abort_on_prompts=True
+#CONSTANTS
+DEFAULT_CONFIG_FILE='config.json'
+DEFAUTL_LOGGING_LEVEL='INFO'
+START_COMMANDS = ['start', 'restart']
 
-#a Boolean setting determining whether Fabric exits when detecting
-#errors on the remote end
-env.warn_only=True
+#PATHs
+PROJECT_DIR=os.path.dirname(os.path.abspath(__file__))
+PID_NAME = __file__
+PID_DIR = PROJECT_DIR
+
+
+
+DEFAULT_CHECK_INTERVAL=5 #seconds
+DEFAULT_CHECK_FREQUENCY=1
 
 
 def setupLogging(default_level=logging.INFO):
+    if 'debug' == DEFAUTL_LOGGING_LEVEL.lower():
+        default_level=logging.DEBUG
+    elif 'warn' == DEFAUTL_LOGGING_LEVEL.lower():
+        default_level=logging.WARN
+    elif 'error' == DEFAUTL_LOGGING_LEVEL.lower():
+        default_level=logging.ERROR
+    else:
+        default_level=logging.INFO
     logging.basicConfig(level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+
+setupLogging(default_level=DEFAUTL_LOGGING_LEVEL)
+#global
+log = logging.getLogger(__name__)
 
 def disableParamikoLogging():
     logging.getLogger("paramiko").setLevel(logging.WARNING)
@@ -58,100 +71,6 @@ def getHostName():
         except socket.gaierror:
             name=socket.gethostname()
     return name
-
-def configValid(configFile):
-        log = logging.getLogger('configValid()')
-        CONFIG_LEVEL1_MUST_KEYS=['env']
-        CONFIG_LEVEL2_MUST_KEYS=['applications']
-        CONFIG_LEVEL3_MUST_KEYS=['protocol','hosts','port','user','password','apps','type','enabled']
-        CONFIG_KEY_FOUND=[]
-        INVALID_CONFIG_FILE=False
-        FOUND_ENV=False
-        FOUND_APPLICATIONS=False
-
-        if os.path.exists(configFile):
-
-                try:
-                      log.info("Validating configuration file %s" % (configFile))
-                      with open(configFile) as f:
-                          config = json.load(f)
-
-                      for config_env in config.keys(): #Iterate environments in configuration file
-                             """
-                             In TOP section
-                             """
-
-                             if config_env in CONFIG_LEVEL1_MUST_KEYS and not FOUND_ENV :
-                                   FOUND_ENV=True
-                                   for config_env_item in config[config_env]: #Iterate Environment attributes
-                                         """
-                                         In TOP > env
-                                         """
-                                         log.debug("Checking settings for Environment: %s  Level: %s" % (config_env_item['name'],config_env_item['level']))
-                                         FOUND_APPLICATIONS=False
-                                         for config_env_key in config_env_item:
-                                                """
-                                                In TOP > env > 'environment name'
-                                                """
-
-                                                if config_env_key in CONFIG_LEVEL2_MUST_KEYS and not FOUND_APPLICATIONS: #Look for 'Applications' key
-                                                      """
-                                                      In TOP > env > 'environment name' > Applications
-                                                      """
-                                                      FOUND_APPLICATIONS=True #Key found
-                                                      for config_env_applications_key in config_env_item[config_env_key]:
-                                                            """
-                                                            In TOP > env > 'environment name' > Applications > values'
-                                                            """
-                                                            log.debug("Application ** %s **" % (config_env_applications_key['Description']))
-
-                                                            """
-                                                            Check if 'must' keys exist in settings - if not then break
-                                                            """
-                                                            for key in config_env_applications_key: #Iterate each key in settings
-                                                                  if key in CONFIG_LEVEL3_MUST_KEYS:
-                                                                        CONFIG_KEY_FOUND.append(key)
-
-                                                            log.debug("Number of valid keys %d" % (len(CONFIG_LEVEL3_MUST_KEYS)))
-                                                            log.debug("Number of keys found %d" % (len(CONFIG_KEY_FOUND)))
-
-                                                            """
-                                                            if atleast one 'must' keys not found then break from the loop
-                                                            and declare configuration file as invalid
-                                                            """
-                                                            if not (len(CONFIG_KEY_FOUND) == len(CONFIG_LEVEL3_MUST_KEYS)):
-                                                                  log.debug("Number of keys did not match")
-                                                                  log.debug("*** INVALID CONFIGURATION FILE ***")
-                                                                  INVALID_CONFIG_FILE=True
-                                                                  break
-                                                            else:
-                                                                log.debug("Number of keys matched")
-
-                                                            CONFIG_KEY_FOUND=[]
-
-                                                else:
-                                                      continue
-                                         if INVALID_CONFIG_FILE:
-                                               log.debug("Failed to validate Environment: %s  Level: %s " % (config_env_item['name'],config_env_item['level']))
-                                         else:
-                                               log.debug("Successfully validated Environment: %s  Level: %s " % (config_env_item['name'],config_env_item['level']))
-                                   break
-                             else:
-                                   continue
-
-                except Exception,e:
-                       INVALID_CONFIG_FILE=True
-                       log.error('Something went wrong while reading web configuration json file %s' % (configFile))
-                       log.error(e,exc_info=True)
-        else:
-            log.error("Configuration File %s does not exist" % (configFile))
-
-        if INVALID_CONFIG_FILE:
-              log.info("Configuration File check Failed")
-              return False
-        else:
-              log.info("Configuration File check Passed")
-              return True
 
 
 class HealthCheckApplication(object):
@@ -193,8 +112,9 @@ class HealthCheckConfig(object):
     def __init__(self,configFile):
         log = logging.getLogger('HealthCheckConfig')
         self.configFilename=configFile
+        self.config_valid=validateConfig(configFile)
         self.applications=[]
-        if configValid(configFile):
+        if self.config_valid:
             with open(configFile) as f:
                 config_data=json.load(f)
                 self.initialize(config_data)
@@ -227,146 +147,7 @@ class HealthCheckConfig(object):
                         log.info("** Environment %s skipped **" % (environment["name"]))
         log.debug("** HealthCheck intialization completed **")
 
-def diskStatus(mount,default_timeout=30):
-    #log.info(env.hosts)
-    log = logging.getLogger('diskStatus()')
-    status=False
-    if not mount:
-        log.debug('Mount is empty')
-    else:
-        command="ls %s" % (mount)
-        #if run("ls %s" % (mount),timeout=5):
-        try:
-            log.info(">>>>>>>>>> Running \'%s\' on host %s  Command timeout %d seconds" % (command,env.host_string,default_timeout))
-            status=False
-            result = run(command,timeout=default_timeout)
-            log.info(">>>>>>>>>> Finished \'%s\' on host %s  return code %d" % (command,env.host_string,result.return_code))
-            if result.return_code == 0:
-                status=True
-        except CommandTimeout as connerr:
-            log.error("Disk %s did not respond %s" % (connerr))
-        except NetworkError as neterr:
-            log.error("Unable to connect to %s" % (env.host_string))
-            log.error(neterr)
-        except SystemExit as syserror:
-            log.error("exit %s" % (syserror))
-            #status=False
-        except Exception as err:
-            log.error("Unknown Error occurred in diskStatus() %s" % (err))
 
-    return status
-
-def sasLogon(environment,protocol,host,port,application,user,password):
-
-    log = logging.getLogger('sasLogon()')
-    headers = {"Content-Type": "text/plain","Accept": "text/plain","Connection":" keep-alive"}
-    cas_endpoint='/SASLogon/v1/tickets/'
-    AVAILABLE=False
-    return_code=300
-    message=""
-    #Logon Code
-    params_logon = urllib.urlencode({'username': user, 'password': password})
-    log.info("checking staus of %s" % (application))
-    try:
-        conn = httplib.HTTPSConnection(host,port,timeout=10)
-        
-        #Rquest Start time
-        conn.request("POST","/SASLogon/v1/tickets/",params_logon,headers)
-        response = conn.getresponse()
-        response.read()
-        
-        return_code = response.status
-        
-        #Get Location
-        if return_code == 201:
-          location = response.getheader("Location")
-          #Extract TGT from location
-          lastSlash = location.rfind('/') + 1
-          tgt = location[lastSlash:len(location)]
-          service_url = "%s://%s:%s/%s/j_spring_cas_security_check" % (protocol,host,port,application)
-          params = urllib.urlencode({'service': service_url})
-          conn.request("POST", "%s%s" % (cas_endpoint, tgt) , params, headers=headers)
-          response = conn.getresponse()
-          return_code=response.status
-          if return_code == 200:
-              service_ticket = response.read()
-              url="%s?ticket=%s" % (service_url, service_ticket)
-              
-              log.info("Successfully received service ticket for %s" % (application))
-              cj = cookielib.CookieJar()
-              no_proxy_support = urllib2.ProxyHandler({})
-              cookie_handler = urllib2.HTTPCookieProcessor(cj)
-              opener = urllib2.build_opener(no_proxy_support, cookie_handler, urllib2.HTTPHandler(debuglevel=1))
-              urllib2.install_opener(opener)
-              
-              log.info("Logging on to %s " % (application))
-              response = urllib2.urlopen(url)
-              
-              return_code=response.getcode()
-              if return_code == 200:
-                log.info("Logging on to %s successful" % (application))
-                AVAILABLE=True
-                message = "Ok"
-              else:
-                log.info("Logging on to %s failed" % (application))
-                AVAILABLE=False
-              htmlresult = response.read()
-              
-              logoffurl="/SASLogon/v1/tickets/" + tgt
-              conn.request("DELETE", logoffurl , headers=headers)
-              response = conn.getresponse()
-              response.read()
-
-          else:
-              message = "Invalid response code %s for Service Ticket Request" % return_code
-              log.info(message)
-              logoffurl="/SASLogon/v1/tickets/" + tgt
-              conn.request("DELETE", logoffurl , headers=headers)
-              response = conn.getresponse()
-              response.read()
-        else:
-          message = "Failed to get TGT return code is %d" % return_code
-          location = ""
-          tgt = ""
-        conn.close()
-
-    except httplib.HTTPException as e:
-        log.error(e)
-        return_code = e.errno
-        message = "Failed to get TGT return code is %d" % return_code
-        log.info(message)
-        #message=e
-    except socket.error as socketmsg:
-        if socketmsg.errno == 111:
-          message="Connection Refused"
-        else:
-          message="Socket error %d" % socketmsg.errno
-        log.error(socketmsg)
-    except socket.gaierror as socketgamsg:
-        if socketgamsg.errno == 111:
-          message="Connection Refused"
-        else:
-          message="Socket error %d" % socketgamsg.errno
-        log.error(socketmsg)
-        
-    output={"value":AVAILABLE,"return_code":return_code,"message":message}
-    return output
-
-
-def getDiskStatus(environment,hosts_list,mountpath):
-    log = logging.getLogger('getDiskStatus()')
-    if hosts_list:
-        env.hosts = hosts_list
-        env.parallel=True
-        env.eagerly_disconnect=True
-        with hide('everything'):
-            log.info(">> BEGIN: Environment: %s Disk: %s check" %(environment,mountpath))
-            disk_output = tasks.execute(diskStatus,mountpath)
-            log.info(">> END: Environment: %s Disk: %s check" %(environment,mountpath))
-            disconnect_all() # Call this when you are done, or get an ugly exception!
-        return disk_output
-    else:
-        return []
 
 
 
@@ -382,7 +163,7 @@ class Healthcheck(object):
         def addStatus(self,data):
             self.status_dict["output"].append(data)
 
-        def getStatus(self):
+        def start(self):
             log = logging.getLogger('Healthcheck.getStatus()')
             status_output=[]
             if self.hc_config.applications:
@@ -416,6 +197,10 @@ class Healthcheck(object):
             else:
                 log.info("No applications loaded")
 
+        def stop(self):
+            raise SystemExit
+            #sys.exit(0)
+
         def save(self,type="",filename=''):
             log = logging.getLogger('Healthcheck.save()')
             TYPE_VALID_VALUES=["log","file"]
@@ -440,8 +225,8 @@ class Healthcheck(object):
                     log.debug("Save disabled")
             else:
                 log.info("Empty status, nothing to save")
-        
-        def printUnavailableApplications(self):
+
+        def showAlerts(self):
             log = logging.getLogger('Healthcheck.printUnavailableApplications()')
             if self.status_dict:
                 for status_property in self.status_dict:
@@ -453,64 +238,141 @@ class Healthcheck(object):
                                         log.info("%s:%s is unavailable via host %s" % (output["application_type"],output["application"],dict_key))
                             elif not output["value"]:
                                 log.info("%s:%s is unavailable via host %s" % (output["application_type"],output["application"],output["hosts"]))
-                            
+
                                 #log.info(output["application"])
-                                
+
             else:
                 log.info("Empty status, nothing to save")
 
 
 
 
-def help():
-  help = """
-        -h --help                    Help
-        -config    config.json       Configuration File
-        -out       status.json       Output File
-      """
-  print help
+class HealthcheckAgent(Daemon):
+    log.info("healthcheck daemon started")
+    def __init__(self, pidfile):
+        Daemon.__init__(self, pidfile)
+        self.run_forever = True
+        self.healthcheck = None
+        self.check_interval = DEFAULT_CHECK_INTERVAL
+        self.check_frequency = DEFAULT_CHECK_FREQUENCY
+        self.config_file=''
+
+    def _handle_sigterm(self, signum, frame):
+        """Handles SIGTERM and SIGINT, which gracefully stops the agent."""
+        log.info("Caught sigterm. Stopping run loop.")
+        self.run_forever = False
+        log.info(self.healthcheck)
+        if self.healthcheck:
+            self.healthcheck.stop()
+
+
+    @classmethod
+    def info(cls, verbose=None):
+        logging.getLogger().setLevel(logging.ERROR)
+        return "Info"
+
+    def run(self, config='config.json'):
+        """Main loop of the collector"""
+        # Gracefully exit on sigterm
+        signal.signal(signal.SIGTERM, self._handle_sigterm)
+        # Handle Keyboard Interrupt
+        signal.signal(signal.SIGINT, self._handle_sigterm)
+
+
+
+        if config:
+            config_file_abs_path=PROJECT_DIR + '/' + config
+            self.healthcheck=Healthcheck(config_file_abs_path)
+            #self.healthcheck=Healthcheck(config)
+
+        while self.run_forever:
+            i=1
+            while i <= self.check_frequency:
+                if self.run_forever:
+                    log.info("Starting HealthCheck")
+                    #self.healthcheck.start()
+                    if self.healthcheck:
+                        self.healthcheck.start()
+                        self.healthcheck.showAlerts()
+                        log.info("Finished HealthCheck")
+                    else:
+                        log.error("Unable to to run HealthCheck")
+                    time.sleep(self.check_interval)
+                    i+=1
+                else:
+                    break
+
+            # Explicitly kill the process, because it might be running as a daemon.
+            log.info("Exiting. Bye bye.")
+            sys.exit(0)
 
 
 def main(argv):
-    fname = ""
-    out=""
-    config=""
+    log = logging.getLogger('healthcheck')
+    COMMANDS_AGENT = [
+        'start',
+        'stop',
+        'restart',
+        'status'
+    ]
+
+    COMMANDS_NO_AGENT = [
+        'info',
+        'check',
+        'configcheck'
+    ]
+
+    COMMANDS = COMMANDS_AGENT + COMMANDS_NO_AGENT
+
+    if len(sys.argv[1:]) < 1:
+        sys.stderr.write("Usage: %s %s\n" % (sys.argv[0], "|".join(COMMANDS)))
+        return 2
+
+    command = sys.argv[1]
+    if command not in COMMANDS:
+        sys.stderr.write("Unknown command: %s\n" % command)
+        return 3
+
+    if command in COMMANDS_AGENT:
+        log.info("initialize healtcheck agent")
+        hcagent = HealthcheckAgent(PidFile(PID_NAME, PID_DIR).get_path())
+
+    if command in START_COMMANDS:
+        log.info('Healthcheck Agent version 1.0')
+
+    if 'start' == command:
+        hcagent.start()
+        #agent.start()
+
+    elif 'stop' == command:
+        log.info('Stop daemon')
+        hcagent.stop()
+        #agent.stop()
+
+    elif 'restart' == command:
+        log.info('Restart daemon')
+        hcagent.restart()
+
+    elif 'status' == command:
+        log.info('Status daemon')
+        hcagent.status()
+
+    elif 'info' == command:
+        return "Health Check Version: 1.0"
+
+    elif 'configcheck' == command or 'configtest' == command:
+        log.info("Validating config")
+
+    return 0
+
+
+if __name__ == '__main__':
     try:
-        options, remainders = getopt.getopt(argv, 'h',["config=","out="])
-        if not options:
-            help()
-            sys.exit()
-    except getopt.GetoptError as err:
-        print err
-        help()
-        sys.exit(2)
-    for opt, arg in options:
-        if opt in ("-h", "--help"):
-            help()
-            sys.exit()
-        elif opt in ("--config"):
-            config=os.path.abspath(arg)
-        elif opt in ("--out"):
-            out = os.path.abspath(arg)
-        else:
-            usage()
-            sys.exit(2)
-
-    hostname=getHostName()
-    print "Host: %s running %s version: %s" % (hostname,__appname__,__version__)
-    #print options
-    print "-config %s  -out %s " % (config,out)
-    if (config and out):
-        setupLogging(default_level=logging.INFO)
-        log = logging.getLogger('healthcheck')
-        hc=Healthcheck(config)
-        hc.getStatus()
-        #hc.save(type='file',filename=out)
-        hc.printUnavailableApplications()
-    else:
-      usage()
-      sys.exit(2)
-########################################
-
-if __name__ == "__main__":
-    main(sys.argv[1:])
+        sys.exit(main(sys.argv[0:]))
+    except StandardError:
+        # Try our best to log the error.
+        try:
+            log.exception("Uncaught error running the Health Check Agent")
+        except Exception:
+            pass
+        raise
