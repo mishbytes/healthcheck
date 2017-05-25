@@ -27,17 +27,19 @@ from config import validateConfig
 
 #CONSTANTS
 DEFAULT_CONFIG_FILE='config.json'
-DEFAUTL_LOGGING_LEVEL='INFO'
+DEFAUTL_LOGGING_LEVEL='DEBUG'
+DEFAUTL_LOG_FILENAME='healthcheck.log'
 START_COMMANDS = ['start', 'restart']
 
 #PATHs
 PROJECT_DIR=os.path.dirname(os.path.abspath(__file__))
 PID_NAME = __file__
 PID_DIR = PROJECT_DIR
+PROJECT_LOG=PROJECT_DIR + '/' + DEFAUTL_LOG_FILENAME
 
 
-
-DEFAULT_CHECK_INTERVAL=5 #seconds
+#Interval
+DEFAULT_CHECK_INTERVAL=1*60*60 #1 Hour
 DEFAULT_CHECK_FREQUENCY=2
 
 
@@ -50,11 +52,12 @@ def setupLogging(default_level=logging.INFO):
         default_level=logging.ERROR
     else:
         default_level=logging.INFO
-    logging.basicConfig(level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(filename=PROJECT_LOG,level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
 setupLogging(default_level=DEFAUTL_LOGGING_LEVEL)
 #global
+print "Log messages written to %s" % PROJECT_LOG
 log = logging.getLogger(__name__)
 
 def disableParamikoLogging():
@@ -227,7 +230,7 @@ class Healthcheck(object):
                 log.info("Empty status, nothing to save")
 
         def showAlerts(self):
-            log = logging.getLogger('Healthcheck.printUnavailableApplications()')
+            log = logging.getLogger('Healthcheck.showAlerts()')
             if self.status_dict:
                 for status_property in self.status_dict:
                     if status_property.upper() == "OUTPUT":
@@ -271,16 +274,16 @@ class HealthcheckAgent(Daemon):
         return "Info"
 
     def run(self, config='config.json'):
-        """Main loop of the collector"""
+        log = logging.getLogger("Healcheck.run()")
+        """Main loop of the healthcheck"""
         # Gracefully exit on sigterm
         signal.signal(signal.SIGTERM, self._handle_sigterm)
         # Handle Keyboard Interrupt
         signal.signal(signal.SIGINT, self._handle_sigterm)
 
-
-
         if config:
             config_file_abs_path=PROJECT_DIR + '/' + config
+            log.info("Reading configuration from %s" % config_file_abs_path)
             self.healthcheck=Healthcheck(config_file_abs_path)
             #self.healthcheck=Healthcheck(config)
 
@@ -288,9 +291,8 @@ class HealthcheckAgent(Daemon):
             i=1
             while i <= self.check_frequency:
                 if self.run_forever:
-                    log.info("Starting HealthCheck")
-                    #self.healthcheck.start()
                     if self.healthcheck:
+                        log.info("Starting HealthCheck")
                         self.healthcheck.start()
                         self.healthcheck.showAlerts()
                         log.info("Finished HealthCheck")
@@ -344,16 +346,16 @@ def main(argv):
         #agent.start()
 
     elif 'stop' == command:
-        log.info('Stop daemon')
+        log.info('Stop')
         hcagent.stop()
         #agent.stop()
 
     elif 'restart' == command:
-        log.info('Restart daemon')
+        log.info('Restart')
         hcagent.restart()
 
     elif 'status' == command:
-        log.info('Status daemon')
+        log.info('Status')
         hcagent.status()
 
     elif 'info' == command:
