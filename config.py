@@ -7,7 +7,7 @@ def validateConfig(configFile):
         log = logging.getLogger('configValid()')
         CONFIG_LEVEL1_MUST_KEYS=['env']
         """
-        env is a list wit the following dictionary items
+        env is a list with the following dictionary items
         """
         CONFIG_LEVEL2_MUST_KEYS=['applications','name','level']
         """
