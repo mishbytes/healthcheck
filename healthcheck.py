@@ -15,6 +15,7 @@ import socket
 import logging
 import json
 from datetime import datetime
+import httplib,urllib, urllib2, cookielib
 
 #Fabric for ssh connections
 
@@ -25,10 +26,10 @@ from fabric.exceptions import CommandTimeout,NetworkError
 
 
 #Fabric setup
-env.user = 'sas'
+env.user = 'srv-sasanl-m'
 #env.password = 'mypassword' #ssh password for user
 # or, specify path to server private key here:
-env.key_filename = '/vagrant/va73_dist/ssh_keys/id_rsa'
+#env.key_filename = '/my/ssh_keys/id_rsa'
 
 #When True, Fabric will run in a non-interactive mode
 #This allows users to ensure a Fabric session will always terminate cleanly
@@ -38,6 +39,7 @@ env.abort_on_prompts=True
 #a Boolean setting determining whether Fabric exits when detecting
 #errors on the remote end
 env.warn_only=True
+
 
 def setupLogging(default_level=logging.INFO):
     logging.basicConfig(level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -151,8 +153,9 @@ def configValid(configFile):
               log.info("Configuration File check Passed")
               return True
 
+
 class HealthCheckApplication(object):
-    def __init__(self,environment,level,name,type,hosts,port,protocol):
+    def __init__(self,environment,level,name,type,hosts,port,protocol,user,password):
         self.type=type
         self.environment=environment
         self.level=environment
@@ -160,16 +163,17 @@ class HealthCheckApplication(object):
         self.protocol=protocol
         self.hosts=hosts
         self.port=port
+        self.user=user
+        self.password=password
         self.timeoutseconds=30
 
 class HealthCheckStatus(object):
-    def __init__(self,hosts,application,application_type,type,value,timestamp,message,errormessage):
+    def __init__(self,hosts,application,application_type,type,value,timestamp,message):
         self.application=application
         self.application_type=application_type
         self.type=type
         self.value=value
         self.message=message
-        self.errormessage=errormessage
         self.timestamp=timestamp
         self.hosts=hosts
 
@@ -181,7 +185,6 @@ class HealthCheckStatus(object):
         _dict_status["type"]=self.type
         _dict_status["value"]=self.value
         _dict_status["message"]=self.message
-        _dict_status["errormessage"]=self.errormessage
         _dict_status["timestamp"]=self.timestamp
         return _dict_status
 
@@ -214,12 +217,14 @@ class HealthCheckConfig(object):
                                                                          application['type'],
                                                                          application['hosts'],
                                                                          application['port'],
-                                                                         application['protocol']
+                                                                         application['protocol'],
+                                                                         application['user'],
+                                                                         application['password']
                                                                          ))
                                         else:
-                                            log.debug("Skipping Application %s in environment %s because it is not enabled in configuration file" % (application["Description"],environment["name"]))
+                                            log.info("Skipping Application %s in environment %s because it is not enabled in configuration file" % (application["Description"],environment["name"]))
                     else:
-                        log.debug("** Environment %s skipped **" % (environment["name"]))
+                        log.info("** Environment %s skipped **" % (environment["name"]))
         log.debug("** HealthCheck intialization completed **")
 
 def diskStatus(mount,default_timeout=30):
@@ -233,6 +238,7 @@ def diskStatus(mount,default_timeout=30):
         #if run("ls %s" % (mount),timeout=5):
         try:
             log.info(">>>>>>>>>> Running \'%s\' on host %s  Command timeout %d seconds" % (command,env.host_string,default_timeout))
+            status=False
             result = run(command,timeout=default_timeout)
             log.info(">>>>>>>>>> Finished \'%s\' on host %s  return code %d" % (command,env.host_string,result.return_code))
             if result.return_code == 0:
@@ -242,10 +248,109 @@ def diskStatus(mount,default_timeout=30):
         except NetworkError as neterr:
             log.error("Unable to connect to %s" % (env.host_string))
             log.error(neterr)
+        except SystemExit as syserror:
+            log.error("exit %s" % (syserror))
+            #status=False
         except Exception as err:
             log.error("Unknown Error occurred in diskStatus() %s" % (err))
 
     return status
+
+def sasLogon(environment,protocol,host,port,application,user,password):
+
+    log = logging.getLogger('sasLogon()')
+    headers = {"Content-Type": "text/plain","Accept": "text/plain","Connection":" keep-alive"}
+    cas_endpoint='/SASLogon/v1/tickets/'
+    AVAILABLE=False
+    return_code=300
+    message=""
+    #Logon Code
+    params_logon = urllib.urlencode({'username': user, 'password': password})
+    log.info("checking staus of %s" % (application))
+    try:
+        conn = httplib.HTTPSConnection(host,port,timeout=10)
+        
+        #Rquest Start time
+        conn.request("POST","/SASLogon/v1/tickets/",params_logon,headers)
+        response = conn.getresponse()
+        response.read()
+        
+        return_code = response.status
+        
+        #Get Location
+        if return_code == 201:
+          location = response.getheader("Location")
+          #Extract TGT from location
+          lastSlash = location.rfind('/') + 1
+          tgt = location[lastSlash:len(location)]
+          service_url = "%s://%s:%s/%s/j_spring_cas_security_check" % (protocol,host,port,application)
+          params = urllib.urlencode({'service': service_url})
+          conn.request("POST", "%s%s" % (cas_endpoint, tgt) , params, headers=headers)
+          response = conn.getresponse()
+          return_code=response.status
+          if return_code == 200:
+              service_ticket = response.read()
+              url="%s?ticket=%s" % (service_url, service_ticket)
+              
+              log.info("Successfully received service ticket for %s" % (application))
+              cj = cookielib.CookieJar()
+              no_proxy_support = urllib2.ProxyHandler({})
+              cookie_handler = urllib2.HTTPCookieProcessor(cj)
+              opener = urllib2.build_opener(no_proxy_support, cookie_handler, urllib2.HTTPHandler(debuglevel=1))
+              urllib2.install_opener(opener)
+              
+              log.info("Logging on to %s " % (application))
+              response = urllib2.urlopen(url)
+              
+              return_code=response.getcode()
+              if return_code == 200:
+                log.info("Logging on to %s successful" % (application))
+                AVAILABLE=True
+                message = "Ok"
+              else:
+                log.info("Logging on to %s failed" % (application))
+                AVAILABLE=False
+              htmlresult = response.read()
+              
+              logoffurl="/SASLogon/v1/tickets/" + tgt
+              conn.request("DELETE", logoffurl , headers=headers)
+              response = conn.getresponse()
+              response.read()
+
+          else:
+              message = "Invalid response code %s for Service Ticket Request" % return_code
+              log.info(message)
+              logoffurl="/SASLogon/v1/tickets/" + tgt
+              conn.request("DELETE", logoffurl , headers=headers)
+              response = conn.getresponse()
+              response.read()
+        else:
+          message = "Failed to get TGT return code is %d" % return_code
+          location = ""
+          tgt = ""
+        conn.close()
+
+    except httplib.HTTPException as e:
+        log.error(e)
+        return_code = e.errno
+        message = "Failed to get TGT return code is %d" % return_code
+        log.info(message)
+        #message=e
+    except socket.error as socketmsg:
+        if socketmsg.errno == 111:
+          message="Connection Refused"
+        else:
+          message="Socket error %d" % socketmsg.errno
+        log.error(socketmsg)
+    except socket.gaierror as socketgamsg:
+        if socketgamsg.errno == 111:
+          message="Connection Refused"
+        else:
+          message="Socket error %d" % socketgamsg.errno
+        log.error(socketmsg)
+        
+    output={"value":AVAILABLE,"return_code":return_code,"message":message}
+    return output
 
 
 def getDiskStatus(environment,hosts_list,mountpath):
@@ -262,6 +367,8 @@ def getDiskStatus(environment,hosts_list,mountpath):
         return disk_output
     else:
         return []
+
+
 
 class Healthcheck(object):
         def __init__(self,configFile):
@@ -285,23 +392,23 @@ class Healthcheck(object):
                                                                              application.name,application.hosts))
                     if application.type.upper() == 'WEBAPP':
                         #log.debug("Environment: %s Application: %s" % (application.environment,application.name))
+                        #sasLogon(environment,protocol,host,port,application,user,password)
+                        _status=sasLogon(application.environment,application.protocol,application.hosts,application.port,application.name,application.user,application.password)
                         self.addStatus(HealthCheckStatus(application.hosts,
                                                             application.name,
                                                             application.type,
                                                             'Availability',
-                                                            'True',
+                                                            _status["value"],
                                                             str(datetime.now()),
-                                                            'Success',
-                                                            '200 OK').asDict())
+                                                            _status["message"]).asDict())
                     elif application.type.upper() == 'DISK':
-                        status_value=getDiskStatus(application.environment,application.hosts,application.name)
+                        _status=getDiskStatus(application.environment,application.hosts,application.name)
                         self.addStatus(HealthCheckStatus(application.hosts,
                                                             application.name,
                                                             application.type,
                                                             'Availability',
-                                                            status_value,
+                                                            _status,
                                                             str(datetime.now()),
-                                                            '',
                                                             '').asDict())
                     else:
                         log.info("Invalid Application Type")
@@ -333,6 +440,26 @@ class Healthcheck(object):
                     log.debug("Save disabled")
             else:
                 log.info("Empty status, nothing to save")
+        
+        def printUnavailableApplications(self):
+            log = logging.getLogger('Healthcheck.printUnavailableApplications()')
+            if self.status_dict:
+                for status_property in self.status_dict:
+                    if status_property.upper() == "OUTPUT":
+                        for output in self.status_dict["output"]:
+                            if isinstance(output["value"], dict):
+                                for dict_key, dict_value in output["value"].iteritems():
+                                    if not dict_value:
+                                        log.info("%s:%s is unavailable via host %s" % (output["application_type"],output["application"],dict_key))
+                            elif not output["value"]:
+                                log.info("%s:%s is unavailable via host %s" % (output["application_type"],output["application"],output["hosts"]))
+                            
+                                #log.info(output["application"])
+                                
+            else:
+                log.info("Empty status, nothing to save")
+
+
 
 
 def help():
@@ -378,7 +505,8 @@ def main(argv):
         log = logging.getLogger('healthcheck')
         hc=Healthcheck(config)
         hc.getStatus()
-        hc.save(type='file',filename=out)
+        #hc.save(type='file',filename=out)
+        hc.printUnavailableApplications()
     else:
       usage()
       sys.exit(2)
