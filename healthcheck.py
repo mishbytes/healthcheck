@@ -418,7 +418,7 @@ if __name__ == '__main__':
     except StandardError:
         # Try our best to log the error.
         try:
-            log.exception("Uncaught error running the Health Check Agent")
+            log.exception("Uncaugh error running the Health Check Agent")
         except Exception:
             pass
         raise
