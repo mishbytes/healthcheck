@@ -1,0 +1,42 @@
+{
+"version":"1.0",
+"comment":"SAS Web Application Health check using SASLogon",
+"enabled":"Yes",
+"env":
+  [
+      {
+      "name":"Dev",
+      "level":"Lev2",
+      "enabled":"Yes",
+      "applications" : [
+          {
+          "enabled":"No",
+          "type":"WEBAPP",
+      		"name":"webcheck",
+          "Description":"Dev environment web check",
+          "protocol":"https",
+      		"hosts":"testserver",
+      		"port":"2443",
+      		"apps":["SASStoredProcess","SASStudio"],
+          "user":"demo",
+          "password":"password",
+          "debug":"No"
+        },
+        {
+        "enabled":"yes",
+        "type":"disk",
+        "name":"diskcheck",
+        "Description":"Dev environment disk check",
+        "protocol":"ssh",
+        "hosts":["demo1","demo2"],
+        "port":"22",
+        "apps":["/opt","/tmp"],
+        "user":"demo",
+        "password":"password",
+        "debug":"No"
+      }
+
+      ]
+    }
+  ]
+}
