@@ -51,20 +51,20 @@ class HealthcheckAgent(Daemon):
         self.run_forever = False
         self.start_event = False
         if self.healthcheck:
-            self.healthcheck.stop()
             #log.info("waiting for current healthcheck to finish")
-            t_end = time.time() + 1*60 #Two minutes
+            t_end = time.time() + 1*60 #One minutes
             while time.time() < t_end:
                 if self.healthcheck.running:
                     t_left = t_end - time.time()
-                    log.info("Waiting for current healthcheck to finish Time left %d of %d seconds" % (t_left,60) )
+                    log.debug("Waiting for current healthcheck to finish Time left %d of %d seconds" % (t_left,60) )
                     time.sleep(5) #Sleep for 5 seconds
                     continue
                 else:
-                    log.info("Current healthcheck stopped")
+                    log.debug("There are no healthcheck current")
                     break
         if self.healthcheck.running:
-            log.info("Timed out waiting for current healthcheck to finish")
+            log.debug("Timed out waiting for current healthcheck to finish")
+        log.info("Exit")
         raise SystemExit
 
     @classmethod
@@ -180,11 +180,11 @@ def main(argv):
             log.info("Configuration file %s is valid" % config_file_abs_path)
         else:
             log.info("Configuration file %s is invalid" % config_file_abs_path)
-            
+
     elif 'emailcheck' == command:
         config_file_abs_path=PROJECT_DIR + '/config.json'
-        healthcheck=Healthcheck(config_file_abs_path)
-        healthcheck.testEmail()
+        #healthcheck=Healthcheck(config_file_abs_path)
+        #healthcheck.testEmail()
 
     return 0
 

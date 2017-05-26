@@ -25,6 +25,13 @@ def healthcheckLogging(default_level=logging.INFO,filename=None):
     else:
         logging.basicConfig(level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
+def disableLogging():
+    logging.getLogger("paramiko").setLevel(logging.WARNING)
+    logging.getLogger("utils").setLevel(logging.WARNING)
+    #logging.getLogger("config").setLevel(logging.WARNING)
+
+disableLogging()
+
 healthcheckLogging(default_level=DEFAUTL_LOGGING_LEVEL)
 #global
 log = logging.getLogger(__name__)

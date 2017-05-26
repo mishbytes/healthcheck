@@ -25,13 +25,6 @@ from email.mime.text import MIMEText
 from service import Service
 from config import HealthCheckConfig
 
-def disableLogging():
-    logging.getLogger("paramiko").setLevel(logging.WARNING)
-    logging.getLogger("utils").setLevel(logging.WARNING)
-    #logging.getLogger("config").setLevel(logging.WARNING)
-
-disableLogging()
-
 def getHostName():
     if socket.gethostname().find('.')>=0:
         name=socket.gethostname()
@@ -57,15 +50,8 @@ class Healthcheck(object):
             #Initialize Health check from configuration file config.json
             self.config=HealthCheckConfig(configfile,configcheck=configcheck)
 
-        def addStatus(self,data):
-            self.status_dict["output"].append(data)
-
         def valid(self):
             return self.config.valid
-
-        def testEmail(self):
-            log.info("Testing email - email host %s" % self.config.smpt_host)
-            #sendEmail()
 
         def start(self):
             if self.start_event:
@@ -74,14 +60,14 @@ class Healthcheck(object):
                 status_output=[]
                 try:
                     if self.config.services:
-                        log.info("** Status check begins **")
+                        log.debug("** Status check begins **")
                         for service in self.config.services:
                             log.debug("Environment: %s Application: %s Hosts: %s" % (service.environment,
                                                                                      service.name,service.hosts))
                             service.status()
-                        log.info("** Status check ends **")
+                        log.debug("** Status check ends **")
                     else:
-                        log.info("No applications loaded")
+                        log.debug("No applications loaded")
                 except Exception as e:
                     log.exception("Exception occurred")
             else:
@@ -96,28 +82,6 @@ class Healthcheck(object):
 
         def save(self,type="",filename=''):
             log = logging.getLogger('Healthcheck.save()')
-            TYPE_VALID_VALUES=["log","file"]
-            if self.status_dict:
-                if type in TYPE_VALID_VALUES:
-                    if type.upper() == 'LOG':
-                        log.info(json.dumps(self.status_dict,indent=4))
-                    elif type.upper() == 'FILE':
-                        if filename:
-                            log.info('Writing status to File %s' % (filename))
-                            try:
-                               with open(filename, 'w') as f:
-                                   json.dump(self.status_dict, f,indent=6)
-                            except IOError, msg:
-                               log.error("Error: can\'t write to file %s" % (filename))
-                               log.error(msg)
-                            else:
-                               log.info("Written content in %s successfully" % (filename))
-                        else:
-                            log.debug("Filename is empty")
-                else:
-                    log.debug("Save disabled")
-            else:
-                log.info("Empty status, nothing to save")
 
         def showAlerts(self):
             log = logging.getLogger('Healthcheck.showAlerts()')
