@@ -2,8 +2,8 @@
 "version":"1.0",
 "comment":"Health Check",
 "enabled":"Yes",
-"smpt":{"host":"myhost","port":587,"user":"myuser","password":"mypassword"},
-"log":"logfile.log",
+"smtp":{"host":"myhost","port":587,"user":"myuser","password":"mypassword"},
+"log":"mylogfile.log",
 "output":"outputfile.txt",
 "env":
       {

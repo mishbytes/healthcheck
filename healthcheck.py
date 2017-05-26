@@ -27,7 +27,7 @@ from config import validateConfig
 
 #CONSTANTS
 DEFAULT_CONFIG_FILE='config.json'
-DEFAUTL_LOGGING_LEVEL='DEBUG'
+DEFAUTL_LOGGING_LEVEL='INFO'
 DEFAUTL_LOG_FILENAME='healthcheck.log'
 START_COMMANDS = ['start', 'restart']
 DEFAULT_KILL_TIMEOUT=10
@@ -45,7 +45,7 @@ DEFAULT_CHECK_INTERVAL=120 #Seconds
 DEFAULT_CHECK_FREQUENCY=1
 
 
-def setupLogging(default_level=logging.INFO):
+def setupLogging(default_level=logging.INFO,filename=None):
     if 'debug' == DEFAUTL_LOGGING_LEVEL.lower():
         default_level=logging.DEBUG
     elif 'warn' == DEFAUTL_LOGGING_LEVEL.lower():
@@ -54,18 +54,27 @@ def setupLogging(default_level=logging.INFO):
         default_level=logging.ERROR
     else:
         default_level=logging.INFO
-    logging.basicConfig(filename=PROJECT_LOG,level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    if not filename == None:
+        # Remove all handlers associated with the root logger object.
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+        logging.basicConfig(filename=filename,level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    else:
+        logging.basicConfig(level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    log = logging.getLogger(__name__)
+
 
 
 setupLogging(default_level=DEFAUTL_LOGGING_LEVEL)
 #global
-print "Log messages written to %s" % PROJECT_LOG
 log = logging.getLogger(__name__)
 
 
 def disableLogging():
     logging.getLogger("paramiko").setLevel(logging.WARNING)
     logging.getLogger("utils").setLevel(logging.WARNING)
+    logging.getLogger("config").setLevel(logging.WARNING)
 
 disableLogging()
 
@@ -116,19 +125,36 @@ class HealthCheckStatus(object):
 
 class HealthCheckConfig(object):
 
-    def __init__(self,configFile):
+    def __init__(self,configFile,configCheck=False):
         log = logging.getLogger('HealthCheckConfig')
         self.configFilename=configFile
-        self.config_valid=validateConfig(configFile)
         self.applications=[]
-        if self.config_valid:
+        self.config_check=configCheck
+        self.logfile='logfile.log'
+        self.enabled=False
+        self.outputfile='output.txt'
+        self.smpt_host=None
+        self.smpt_port=None
+        self.smpt_user=None
+        self.smpt_password=None
+        self.env_name=''
+        self.env_level=''
+
+        if self.config_check:
+            log.info("configuration check requested")
+        self.config_valid=validateConfig(configFile)
+        if self.config_valid and not self.config_check:
             with open(configFile) as f:
                 config_data=json.load(f)
-                self.initialize(config_data)
+                self.loadApplications(config_data)
+                setupLogging(default_level=DEFAUTL_LOGGING_LEVEL,filename=self.logfile)
 
-    def initialize(self,config):
-        log = logging.getLogger('HealthCheckConfig.initialize()')
-        log.debug("** HealthCheck intialization started **")
+    def isConfigValid(self):
+        return self.config_valid
+
+    def loadApplications_disabled(self,config):
+        log = logging.getLogger('HealthCheckConfig.loadApplications()')
+        log.debug("** Fetching Applications **")
         for config_key in config:
             if config_key == 'env':
                 for environment in config[config_key]:
@@ -154,23 +180,80 @@ class HealthCheckConfig(object):
                         log.info("** Environment %s skipped **" % (environment["name"]))
         log.debug("** HealthCheck intialization completed **")
 
-
-
-
+    def loadApplications(self,config):
+        log = logging.getLogger('HealthCheckConfig.loadApplications()')
+        log.debug("** Fetching Applications **")
+        CONFIG_OPTIONS=['name','smtp','log','output','env''comment']
+        CONFIG_SMTP_OPTIONS=['host','port','user','password']
+        for config_key in config.keys():
+            if 'NAME' == config_key.upper():
+                pass
+            elif 'LOG' == config_key.upper():
+                self.logfile=PROJECT_DIR + '/' + config[config_key]
+            elif 'OUTPUT' == config_key.upper():
+                self.outputfile=PROJECT_DIR + '/' + config[config_key]
+            elif 'SMTP' == config_key.upper():
+                for smtp_key in config[config_key]:
+                    if 'HOST' == smtp_key.upper():
+                        self.smpt_host = config[config_key][smtp_key]
+                    if 'PORT' == smtp_key.upper():
+                        self.smpt_port = config[config_key][smtp_key]
+                    if 'USER' == smtp_key.upper():
+                        self.smpt_user = config[config_key][smtp_key]
+                    if 'PASSWORD' == smtp_key.upper():
+                        self.smpt_password = config[config_key][smtp_key]
+            elif 'ENABLED' == config_key.upper():
+                if 'YES' == config_key.upper():
+                    self.enabled=True
+            elif 'ENV' == config_key.upper():
+                for env_key in config[config_key]:
+                    if 'NAME' == env_key.upper():
+                        self.env_name=config[config_key][env_key]
+                    elif 'LEVEL' == env_key.upper():
+                        self.env_level=config[config_key][env_key]
+                    elif 'ENABLED' == env_key.upper():
+                        self.enabled=config[config_key][env_key]
+                    elif 'APPLICATIONS' == env_key.upper():
+                        for application in config[config_key][env_key]:
+                            if  'YES' == application["enabled"].upper():
+                                for application_key in application:
+                                    if 'apps' == application_key.upper():
+                                        for name in application[application_key]:
+                                            self.applications.append(HealthCheckApplication(self.env_name,
+                                                                     self.env_level,
+                                                                     name,
+                                                                     application['type'],
+                                                                     application['hosts'],
+                                                                     application['port'],
+                                                                     application['protocol'],
+                                                                     application['user'],
+                                                                     application['password']
+                                                                     ))
+                                log.debug("Added Application %s to check" % application)
+                            else:
+                                log.debug("Removed Application %s from check" % application)
 
 class Healthcheck(object):
-        def __init__(self,configFile):
+    
+        def __init__(self,configFile,configCheck=False):
             self.status_dict={}
-            self.status_dict["hostname"]=getHostName()
+            self.status_dict["hostname"]="myhost"
             self.status_dict["timestamp"]=str(datetime.now())
             self.status_dict["output"]=[]
             self.status_output=[]
             self.running=False
             self.start_event=True
-            self.hc_config=HealthCheckConfig(configFile)
+            self.hc_config=HealthCheckConfig(configFile,configCheck=configCheck)
+            if self.hc_config and self.hc_config.config_valid:
+                log = logging.getLogger("Healthcheck")
+                log.info('Healthcheck Initialized')
+
 
         def addStatus(self,data):
             self.status_dict["output"].append(data)
+
+        def isConfigValid(self):
+            return self.hc_config.isConfigValid()
 
         def start(self):
             if self.start_event:
@@ -186,21 +269,21 @@ class Healthcheck(object):
                             if application.type.upper() == 'WEBAPP':
                                 #log.debug("Environment: %s Application: %s" % (application.environment,application.name))
                                 #sasLogon(environment,protocol,host,port,application,user,password)
-                                _status=sasLogon(application.environment,application.protocol,application.hosts,application.port,application.name,application.user,application.password)
+                                response=sasLogon(application.environment,application.protocol,application.hosts,application.port,application.name,application.user,application.password)
                                 self.addStatus(HealthCheckStatus(application.hosts,
                                                                     application.name,
                                                                     application.type,
                                                                     'Availability',
-                                                                    _status["value"],
+                                                                    response["value"],
                                                                     str(datetime.now()),
-                                                                    _status["message"]).asDict())
+                                                                    response["message"]).asDict())
                             elif application.type.upper() == 'DISK':
-                                _status=getDiskStatus(application.environment,application.hosts,application.name)
+                                response=getDiskStatus(application.environment,application.hosts,application.name)
                                 self.addStatus(HealthCheckStatus(application.hosts,
                                                                     application.name,
                                                                     application.type,
                                                                     'Availability',
-                                                                    _status,
+                                                                    response,
                                                                     str(datetime.now()),
                                                                     '').asDict())
                             else:
@@ -316,7 +399,6 @@ class HealthcheckAgent(Daemon):
 
         if config:
             config_file_abs_path=PROJECT_DIR + '/' + config
-            log.info("Reading configuration from %s" % config_file_abs_path)
             self.healthcheck=Healthcheck(config_file_abs_path)
             #self.healthcheck=Healthcheck(config)
 
@@ -384,7 +466,8 @@ def main(argv):
         hcagent = HealthcheckAgent(PidFile(PID_NAME, PID_DIR).get_path())
 
     if command in START_COMMANDS:
-        log.info('Healthcheck Agent version 1.0')
+        #log.info('Healthcheck Agent version 1.0')
+        pass
 
     if 'start' == command:
         hcagent.start()
@@ -408,6 +491,13 @@ def main(argv):
 
     elif 'configcheck' == command or 'configtest' == command:
         log.info("Validating config")
+        config_file_abs_path=PROJECT_DIR + '/config.json'
+        log.info("Reading configuration from %s" % config_file_abs_path)
+        healthcheck=Healthcheck(config_file_abs_path,configCheck=True)
+        if healthcheck.isConfigValid():
+            print "Configuration file %s is valid" % config_file_abs_path
+        else:
+            print "Configuration file %s is invalid" % config_file_abs_path
 
     return 0
 

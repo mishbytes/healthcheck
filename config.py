@@ -4,7 +4,7 @@ import json
 import os
 
 def validateConfig(configFile):
-        log = logging.getLogger('configValid()')
+        log = logging.getLogger('config.validateConfig()')
         CONFIG_TOP_KEYS=['env']
         CONFIG_TOP_ENVKEY='ENV'
         """
@@ -37,15 +37,14 @@ def validateConfig(configFile):
                              """
                              In TOP section
                              """
-                             log.info(config_env)
                              if config_env.upper() == CONFIG_TOP_ENVKEY and not FOUND_ENV :
                                  CONFIG_TOP_KEYCHECK_RESULT.append(config_env)
                                  FOUND_ENV=True
                                  """
                                  In TOP > env
                                  """
-                                 log.info("config_env_item ----" % config[config_env])
-                                 log.info("Checking settings for Environment: %s  Level: %s" % (config[config_env]['name'],config[config_env]['level']))
+                                 log.debug("config_env_item ----" % config[config_env])
+                                 log.debug("Checking settings for Environment: %s  Level: %s" % (config[config_env]['name'],config[config_env]['level']))
                                  FOUND_APPLICATIONS=False
 
                                  for config_app_key in config[config_env]:
@@ -64,7 +63,7 @@ def validateConfig(configFile):
                                                     CONFIG_APPLICATIONS_KEYCHECK_RESULT=[]
                                                     for applications_key in applications.keys():
                                                         if applications_key in CONFIG_APPLICATIONKEYS:
-                                                            log.info(applications_key)
+                                                            log.debug("Application Key found %s" % applications_key)
                                                             CONFIG_APPLICATIONS_KEYCHECK_RESULT.append(applications_key)
 
                                                     log.debug("Number of valid Application keys %d" % (len(CONFIG_APPLICATIONKEYS)))
@@ -81,17 +80,8 @@ def validateConfig(configFile):
 
                                  if not (len(CONFIG_ENV_KEYCHECK_RESULT) == len(CONFIG_ENVKEYS)):
                                      log.debug("Number of environment keys did not match")
-                                     INVALID_CONFIG_FILE=False
+                                     INVALID_CONFIG_FILE=True
 
-
-
-
-                                 #if INVALID_CONFIG_FILE:
-                                 #      log.info("Failed to validate Environment: %s  Level: %s " % (config[config_env]['name'],config[config_env]['level']))
-                                 #else:
-                                        #log.info("Successfully validated Environment: %s  Level: %s " % (config[config_env]['name'],config[config_env]['level']))
-
-                                  #ENV found, now break from IF condition
                                  break
                              else:
                                  log.debug("Looking for env key")
