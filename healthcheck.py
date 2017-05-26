@@ -60,8 +60,8 @@ class Healthcheck(object):
         def addStatus(self,data):
             self.status_dict["output"].append(data)
 
-        def isConfigValid(self):
-            return self.config.isConfigValid()
+        def valid(self):
+            return self.config.valid
 
         def testEmail(self):
             log.info("Testing email - email host %s" % self.config.smpt_host)

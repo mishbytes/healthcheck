@@ -65,6 +65,9 @@ class HealthCheckConfig(object):
 
         healthcheckLogging(default_level=self.logging_level,filename=self.logfile) #Change Logging
 
+        if self.checkonly:
+            #Configuration Check does not run as daemon, therefore its log can be sent to console
+            healthcheckLogging(default_level=self.logging_level)
         self.valid=self.validate(self.configfile)
 
         if self.valid:
@@ -235,10 +238,10 @@ class HealthCheckConfig(object):
             log.error("Configuration File %s does not exist" % (configFile))
 
         if INVALID_CONFIG_FILE:
-              log.info("Configuration File check Failed")
+              log.info("Configuration check Failed")
               return False
         else:
-              log.info("Configuration File check Passed")
+              log.info("Configuration check Passed")
               return True
 
 if __name__ == '__main__':

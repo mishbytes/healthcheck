@@ -175,11 +175,12 @@ def main(argv):
 
     elif 'configcheck' == command or 'configtest' == command:
         config_file_abs_path=PROJECT_DIR + '/config.json'
-        healthcheck=Healthcheck(config_file_abs_path,configCheck=True)
-        if healthcheck.isConfigValid():
+        healthcheck=Healthcheck(config_file_abs_path,configcheck=True)
+        if healthcheck.valid():
             log.info("Configuration file %s is valid" % config_file_abs_path)
         else:
             log.info("Configuration file %s is invalid" % config_file_abs_path)
+            
     elif 'emailcheck' == command:
         config_file_abs_path=PROJECT_DIR + '/config.json'
         healthcheck=Healthcheck(config_file_abs_path)

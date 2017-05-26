@@ -6,7 +6,7 @@
 "email":"no",
 "log":"/data/projects/sas/healthcheck/githubproject/mylogfile.log",
 "output":"outputfile.txt",
-"verbose":"yes",
+"verbose":"no",
 "env":
       {
       "name":"Dev",
