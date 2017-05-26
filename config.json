@@ -3,16 +3,18 @@
 "comment":"Health Check",
 "enabled":"Yes",
 "smtp":{"host":"myhost","port":587,"user":"myuser","password":"mypassword"},
-"log":"mylogfile.log",
+"email":"no",
+"log":"/data/projects/sas/healthcheck/githubproject/mylogfile.log",
 "output":"outputfile.txt",
+"verbose":"yes",
 "env":
       {
       "name":"Dev",
       "level":"Lev2",
       "enabled":"Yes",
-      "applications" : [
+      "services" : [
                             {
-                              "enabled":"No",
+                              "enabled":"yes",
                               "type":"WEBAPP",
                           		"name":"webcheck",
                               "Description":"Dev environment web check",
