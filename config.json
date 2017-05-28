@@ -6,6 +6,8 @@
 "email":"no",
 "log":"/data/projects/sas/healthcheck/githubproject/mylogfile.log",
 "output":"outputfile.txt",
+"run_interval_seconds":900,
+"run_counter":1,
 "verbose":"no",
 "env":
       {
@@ -32,7 +34,7 @@
                               "name":"diskcheck",
                               "Description":"Dev environment disk check",
                               "protocol":"ssh",
-                              "hosts":["demo1","demo2"],
+                              "hosts":["192.168.56.201","192.168.56.202","192.168.56.203"],
                               "port":"22",
                               "apps":["/opt","/tmp"],
                               "user":"demo",

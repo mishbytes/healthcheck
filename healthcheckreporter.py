@@ -13,6 +13,8 @@ import socket
 import logging
 import json
 import time
+import threading
+
 from datetime import datetime
 
 #email
@@ -36,10 +38,14 @@ def getHostName():
     return name
 
 
+log = logging.getLogger('HealthCheckReporter')
 
-class Healthcheck(object):
+class HealthcheckReporter(threading.Thread):
 
         def __init__(self,configfile,configcheck=False):
+            threading.Thread.__init__(self)
+            self.finished = threading.Event()
+            self.last_service=None
             self.running=False
             self.start_event=True
             self.status_dict={}
@@ -49,6 +55,23 @@ class Healthcheck(object):
             self.status_output=[]
             #Initialize Health check from configuration file config.json
             self.config=HealthCheckConfig(configfile,configcheck=configcheck)
+            #As this class is a thread, disable sys stdout and stderr
+            sys.stdout = open('/dev/null', 'w')
+            sys.stderr = open('/dev/null', 'w')
+
+
+        def stop(self):
+            self.start_event=False
+            self.running=False
+            log.info("Stopping HealthcheckReporter thread")
+            self.finished.set()
+            log.info("HealthcheckReporter thread stopped")
+
+        def getRunIntervalSeconds(self):
+            return self.config.run_interval_seconds
+
+        def getRunCounter(self):
+            return self.config.run_counter
 
         def valid(self):
             return self.config.valid
@@ -64,6 +87,7 @@ class Healthcheck(object):
                         for service in self.config.services:
                             log.debug("Environment: %s Application: %s Hosts: %s" % (service.environment,
                                                                                      service.name,service.hosts))
+                            self.last_service=service
                             service.status()
                         log.debug("** Status check ends **")
                     else:
@@ -73,12 +97,6 @@ class Healthcheck(object):
             else:
                 pass
 
-
-        def stop(self):
-            self.start_event=False
-            #self.running=False
-            #raise SystemExit
-            #sys.exit(0)
 
         def save(self,type="",filename=''):
             log = logging.getLogger('Healthcheck.save()')
@@ -100,7 +118,7 @@ class Healthcheck(object):
                                 log.info("%s:%s is unavailable via host %s" % (output["application_type"],output["application"],output["hosts"]))
 
                                 #log.info(output["application"])
-                self.sendemail(collect_alerts)
+                #self.sendemail(collect_alerts)
 
             else:
                 log.info("Empty status, nothing to save")

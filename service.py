@@ -1,9 +1,13 @@
 import logging
+import time
+import threading
 from datetime import datetime
 
 #project
 from check_sas import sasLogon
 from check_disk import getDiskStatus
+
+log = logging.getLogger('Service')
 
 class Service(object):
     def __init__(self,environment,level,name,type,hosts,port,protocol,user,password):
@@ -26,6 +30,7 @@ class Service(object):
         self.timestamp=None
         self.timeoutseconds=30
 
+
     def isAvailable(self):
         return self.available
 
@@ -33,6 +38,7 @@ class Service(object):
         log = logging.getLogger('Service.status()')
         if self.type.upper() == 'WEBAPP':
             #response={"value":True|False,"return_code":return_code,"message":message}
+            logging.debug("Checking Web: %s://%s:%s/%s" % (self.protocol,self.hosts,self.port,self.name))
             self.timestamp=str(datetime.now())
             response=sasLogon(self.environment,
                               self.protocol,
@@ -47,6 +53,7 @@ class Service(object):
             self.message=response["message"]
 
         elif self.type.upper() == 'DISK':
+            logging.debug("Checking Disk")
             self.timestamp=str(datetime.now())
             response=getDiskStatus(self.environment,
                                    self.hosts,

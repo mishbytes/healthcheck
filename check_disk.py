@@ -10,13 +10,19 @@ from fabric.exceptions import CommandTimeout,NetworkError
 
 log = logging.getLogger(__name__)
 
+def disableLogging():
+    logging.getLogger("paramiko").setLevel(logging.WARNING)
+
+disableLogging()
 #CONSTANTS
 
 #Fabric setup
-env.user = 'srv-sasanl-m'
+env.user = 'sas'
 #env.password = 'mypassword' #ssh password for user
 # or, specify path to server private key here:
 #env.key_filename = '/my/ssh_keys/id_rsa'
+
+env.key_filename='/vagrant/va73_dist/ssh_keys/id_rsa'
 
 #When True, Fabric will run in a non-interactive mode
 #This allows users to ensure a Fabric session will always terminate cleanly
@@ -48,17 +54,17 @@ def diskStatus(mount,default_timeout=30):
                 status=True
         except CommandTimeout as connerr:
             message="Disk %s did not respond" % mount
-            log.error("Disk %s did not respond %s" % (mount,connerr))
+            log.debug("Disk %s did not respond %s" % (mount,connerr))
         except NetworkError as neterr:
             message="Unable to connect to %s" % (env.host_string)
-            log.error("Unable to connect to %s" % (env.host_string))
-            log.error(neterr)
+            log.debug("Unable to connect to %s" % (env.host_string))
+            log.debug(neterr)
         except SystemExit as syserror:
-            log.error("exit %s" % (syserror))
+            log.debug("exit %s" % (syserror))
             #status=False
         except Exception as err:
             message="Unknown Error occurred in diskStatus()"
-            log.error("Unknown Error occurred in diskStatus() %s" % (err))
+            log.debug("Unknown Error occurred in diskStatus() %s" % (err))
 
     output={"host":env.host_string,"value":status,"return_code":return_code,"message":message}
     return output

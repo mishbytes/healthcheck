@@ -2,17 +2,22 @@ import logging
 import signal
 import os
 import sys
+import time
+
 #project
 from utils.pidfile import PidFile
 from utils.daemon import Daemon
 from config import healthcheckLogging
-from healthcheck import Healthcheck
+from healthcheckreporter import HealthcheckReporter
 
+os.umask(022)
 
 #CONSTANTS
 DEFAULT_CONFIG_FILE='config.json'
 DEFAUTL_LOGGING_LEVEL=logging.INFO
 DEFAUTL_LOG_FILENAME='healthcheck.log'
+ENABLE_CONSOLE_LOG=True
+DEFAUTL_CONSOLE_LOG_FILENAME='console.log'
 START_COMMANDS = ['start', 'restart']
 DEFAULT_KILL_TIMEOUT=10
 
@@ -28,10 +33,21 @@ PROJECT_LOG=PROJECT_DIR + '/' + DEFAUTL_LOG_FILENAME
 DEFAULT_CHECK_INTERVAL=120 #Seconds
 DEFAULT_CHECK_FREQUENCY=1
 
+def consoleLogging(filename=None):
+    if filename:
+        healthcheckLogging(filename=DEFAUTL_CONSOLE_LOG_FILENAME,default_level=DEFAUTL_LOGGING_LEVEL)
+    else:
+        healthcheckLogging(default_level=DEFAUTL_LOGGING_LEVEL)
 
-healthcheckLogging(default_level=DEFAUTL_LOGGING_LEVEL)
+consoleLogging()
 #global
 log = logging.getLogger(__name__)
+
+def disableLogging():
+    logging.getLogger("utils").setLevel(logging.WARNING)
+    #logging.getLogger("config").setLevel(logging.WARNING)
+
+#disableLogging()
 
 class HealthcheckAgent(Daemon):
     log = logging.getLogger('HealthCheckAgent')
@@ -39,7 +55,7 @@ class HealthcheckAgent(Daemon):
         Daemon.__init__(self, pidfile)
         self.run_forever = True
         self.start_event=True
-        self.healthcheck = None
+        self.healthcheckreporter = None
         self.check_interval = DEFAULT_CHECK_INTERVAL
         self.check_frequency = DEFAULT_CHECK_FREQUENCY
         self.config_file=''
@@ -48,13 +64,15 @@ class HealthcheckAgent(Daemon):
         """Handles SIGTERM and SIGINT, which gracefully stops the agent."""
         log = logging.getLogger('HealthCheckAgent._handle_sigterm()')
         log.info("Caught sigterm. Stopping run loop.")
+
+        log.debug("Parent Process id is: %s" % (super(Daemon, self).pid()))
         self.run_forever = False
         self.start_event = False
-        if self.healthcheck:
-            #log.info("waiting for current healthcheck to finish")
+
+        if self.healthcheckreporter:
             t_end = time.time() + 1*60 #One minutes
             while time.time() < t_end:
-                if self.healthcheck.running:
+                if self.healthcheckreporter.running:
                     t_left = t_end - time.time()
                     log.debug("Waiting for current healthcheck to finish Time left %d of %d seconds" % (t_left,60) )
                     time.sleep(5) #Sleep for 5 seconds
@@ -62,8 +80,9 @@ class HealthcheckAgent(Daemon):
                 else:
                     log.debug("There are no healthcheck current")
                     break
-        if self.healthcheck.running:
-            log.debug("Timed out waiting for current healthcheck to finish")
+        if self.healthcheckreporter.running:
+            log.debug("Timed out waiting for current healthcheck reporter to finish")
+            self.healthcheckreporter.stop()
         log.info("Exit")
         raise SystemExit
 
@@ -74,6 +93,7 @@ class HealthcheckAgent(Daemon):
 
     def run(self, config='config.json'):
         log = logging.getLogger("HealcheckAgent.run()")
+
         """Main loop of the healthcheck"""
         # Gracefully exit on sigterm
         signal.signal(signal.SIGTERM, self._handle_sigterm)
@@ -82,8 +102,11 @@ class HealthcheckAgent(Daemon):
 
         if config:
             config_file_abs_path=PROJECT_DIR + '/' + config
-            self.healthcheck=Healthcheck(config_file_abs_path)
+            self.healthcheckreporter=HealthcheckReporter(config_file_abs_path)
+            self.check_interval=self.healthcheckreporter.getRunIntervalSeconds()
+            self.check_frequency=self.healthcheckreporter.getRunCounter()
             #self.healthcheck=Healthcheck(config)
+
 
         while self.run_forever:
             i=1
@@ -93,25 +116,27 @@ class HealthcheckAgent(Daemon):
                         t_end=time.time() + self.check_interval
                         while time.time() < t_end:
                             if self.run_forever:
-                                log.info("waiting to run next event %s" % self.healthcheck.start_event)
+                                log.debug("waiting to run next event %s" % self.healthcheckreporter.start_event)
                                 time.sleep(DEFAULT_KILL_TIMEOUT)
                             else:
                                 break
-
-                    if self.healthcheck:
-                        log.info("Starting HealthCheck instance# %d" % i)
+                    log.info("Starting HealthCheck instance# %d" % i)
+                    if self.healthcheckreporter:
                         try:
-                            self.healthcheck.start()
-                            self.healthcheck.showAlerts()
-                            self.healthcheck.running=False
-                            log.info("Finished HealthCheck instance# %d" % i)
+                            self.healthcheckreporter.start()
+                            #self.healthcheckreporter.showAlerts()
+                            #self.healthcheckreporter.stop()
+                            self.healthcheckreporter.running=False
                         finally:
-                            self.healthcheck.running=False
+                            self.healthcheckreporter.running=False
                     else:
+                        self.healthcheckreporter.stop()
                         log.error("Unable to to run HealthCheck")
+                    log.info("Finished HealthCheck instance# %d" % i)
                     i+=1
 
                 else:
+                    self.healthcheckreporter.stop()
                     break
 
             # Explicitly kill the process, because it might be running as a daemon.
@@ -175,8 +200,8 @@ def main(argv):
 
     elif 'configcheck' == command or 'configtest' == command:
         config_file_abs_path=PROJECT_DIR + '/config.json'
-        healthcheck=Healthcheck(config_file_abs_path,configcheck=True)
-        if healthcheck.valid():
+        healthcheckreporter=HealthcheckReporter(config_file_abs_path,configcheck=True)
+        if healthcheckreporter.valid():
             log.info("Configuration file %s is valid" % config_file_abs_path)
         else:
             log.info("Configuration file %s is invalid" % config_file_abs_path)

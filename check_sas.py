@@ -18,7 +18,7 @@ def sasLogon(environment,protocol,host,port,application,user,password):
     message=""
     #Logon Code
     params_logon = urllib.urlencode({'username': user, 'password': password})
-    log.info("checking staus of %s" % (application))
+    log.debug("checking staus of %s" % (application))
     try:
         conn = httplib.HTTPSConnection(host,port,timeout=10)
 
@@ -44,7 +44,7 @@ def sasLogon(environment,protocol,host,port,application,user,password):
               service_ticket = response.read()
               url="%s?ticket=%s" % (service_url, service_ticket)
 
-              log.info("Successfully received service ticket for %s" % (application))
+              log.debug("Successfully received service ticket for %s" % (application))
               cj = cookielib.CookieJar()
               no_proxy_support = urllib2.ProxyHandler({})
               cookie_handler = urllib2.HTTPCookieProcessor(cj)
@@ -56,11 +56,11 @@ def sasLogon(environment,protocol,host,port,application,user,password):
 
               return_code=response.getcode()
               if return_code == 200:
-                log.info("Logging on to %s successful" % (application))
+                log.debug("Logging on to %s successful" % (application))
                 AVAILABLE=True
                 message = "Ok"
               else:
-                log.info("Logging on to %s failed" % (application))
+                log.debug("Logging on to %s failed" % (application))
                 AVAILABLE=False
               htmlresult = response.read()
 
@@ -71,7 +71,7 @@ def sasLogon(environment,protocol,host,port,application,user,password):
 
           else:
               message = "Invalid response code %s for Service Ticket Request" % return_code
-              log.info(message)
+              log.debug(message)
               logoffurl="/SASLogon/v1/tickets/" + tgt
               conn.request("DELETE", logoffurl , headers=headers)
               response = conn.getresponse()
@@ -83,26 +83,26 @@ def sasLogon(environment,protocol,host,port,application,user,password):
         conn.close()
 
     except httplib.HTTPException as e:
-        log.error(e)
+        log.debug(e)
         return_code = e.errno
         message = "Failed to get TGT return code is %d" % return_code
-        log.info(message)
+        log.debug(message)
         #message=e
     except socket.error as socketmsg:
-        log.error("host %s port %s" % (host,port))
-        log.error(socketmsg.errno)
+        log.debug("host %s port %s" % (host,port))
+        log.debug(socketmsg.errno)
         if socketmsg.errno == 111:
             message="Connection Refused"
         else:
             message=socketmsg
             #message="Socket error %d" % socketmsg.errno
-        log.error(socketmsg)
+        log.debug(socketmsg)
     except socket.gaierror as socketgamsg:
         if socketgamsg.errno == 111:
           message="Connection Refused"
         else:
           message="Socket error %d" % socketgamsg.errno
-        log.error(socketmsg)
+        log.debug(socketmsg)
 
     output={"value":AVAILABLE,"return_code":return_code,"message":message}
     return output

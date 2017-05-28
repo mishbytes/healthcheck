@@ -25,12 +25,6 @@ def healthcheckLogging(default_level=logging.INFO,filename=None):
     else:
         logging.basicConfig(level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-def disableLogging():
-    logging.getLogger("paramiko").setLevel(logging.WARNING)
-    logging.getLogger("utils").setLevel(logging.WARNING)
-    #logging.getLogger("config").setLevel(logging.WARNING)
-
-disableLogging()
 
 healthcheckLogging(default_level=DEFAUTL_LOGGING_LEVEL)
 #global
@@ -53,38 +47,43 @@ class HealthCheckConfig(object):
         self.smtp_receiver=''
         self.env_name=''
         self.env_level=''
+        self.run_interval_seconds=0
+        self.run_counter=0
         self.valid=False
         self.logging_level=DEFAUTL_LOGGING_LEVEL
-        self.loadConfig()
+        self.getConfig()
 
 
-    def loadConfig(self):
-        log = logging.getLogger('config.HealthCheckConfig.loadConfig()')
+    def getConfig(self):
+        log = logging.getLogger('config.HealthCheckConfig.getConfig()')
         try:
             with open(self.configfile) as f:
                 config_data=json.load(f)
+
+            if self.checkonly:
+                #Configuration Check does not run as daemon, therefore its log can be sent to console
+                healthcheckLogging(default_level=self.logging_level)
+                log.info("Configuration check only")
+            else:
+                #set get verbose and logfile options from config.json
+                self.setLogOptions(config_data)
+                healthcheckLogging(default_level=self.logging_level,filename=self.logfile) #Write to log
+
         except (IOError, OSError) as e:
             log.error("Error occurred while loading json file")
+            log.error(e)
             sys.exit(2)
 
-        #set get verbose and logfile options from config.json
-        self.setLogOptions(config_data)
-
-        healthcheckLogging(default_level=self.logging_level,filename=self.logfile) #Change Logging
-
-        if self.checkonly:
-            #Configuration Check does not run as daemon, therefore its log can be sent to console
-            healthcheckLogging(default_level=self.logging_level)
         self.valid=self.validate(self.configfile)
 
         if self.valid:
             if not self.checkonly:
-                self.loadServices(config_data)
+                self.getServicesFromConfig(config_data)
                 healthcheckLogging(default_level=self.logging_level,filename=self.logfile)
             else:
-                log.debug("Attribute config_check set to True, therefore only config check performed, skipped loading")
+                log.info("Configuration check only, skipped loading")
         else:
-            log.debug("Not loading configuration file as it is Invalid")
+            log.debug("Configuration File is invalid")
 
     def valid(self):
         return self.valid
@@ -99,10 +98,10 @@ class HealthCheckConfig(object):
 
 
 
-    def loadServices(self,config):
-        log = logging.getLogger('HealthCheckConfig.loadServices()')
+    def getServicesFromConfig(self,config):
+        log = logging.getLogger('HealthCheckConfig.getServicesFromConfig()')
         log.debug("** Fetching Applications **")
-        CONFIG_OPTIONS=['name','smtp','log','output','env''comment']
+        CONFIG_OPTIONS=['name','smtp','log','output','env','comment','run_interval_seconds','run_counter','verbose']
         CONFIG_SMTP_OPTIONS=['host','port','user','password']
         for config_key in config.keys():
             if 'NAME' == config_key.upper():
@@ -114,6 +113,10 @@ class HealthCheckConfig(object):
             elif 'VERBOSE' == config_key.upper():
                 if 'YES' == config[config_key].upper():
                     self.logging_level=logging.DEBUG
+            elif 'RUN_INTERVAL_SECONDS' == config_key.upper():
+                self.run_interval_seconds= config[config_key]
+            elif 'RUN_COUNTER' == config_key.upper():
+                self.run_counter= config[config_key]
             elif 'SMTP' == config_key.upper():
                 for smtp_key in config[config_key]:
                     if 'HOST' == smtp_key.upper():
@@ -178,7 +181,7 @@ class HealthCheckConfig(object):
         if os.path.exists(configfile):
 
                 try:
-                      log.info("Validating configuration file %s" % (configfile))
+                      log.debug("validating configuration %s" % (configfile))
                       with open(configfile) as f:
                           config = json.load(f)
 
