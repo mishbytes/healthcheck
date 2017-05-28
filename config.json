@@ -5,7 +5,7 @@
 "smtp":{"host":"myhost","port":587,"user":"myuser","password":"mypassword"},
 "email":"no",
 "log":"/data/projects/sas/healthcheck/githubproject/mylogfile.log",
-"output":"outputfile.txt",
+"status_jinja2_html_template":"/data/projects/sas/healthcheck/githubproject/status.html.template",
 "run_interval_seconds":900,
 "run_counter":1,
 "verbose":"yes",

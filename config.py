@@ -38,7 +38,6 @@ class HealthCheckConfig(object):
         self.checkonly=configcheck
         self.logfile='logfile.log'
         self.enabled=False
-        self.outputfile='output.txt'
         self.smtp_host=''
         self.smtp_port=25
         self.smtp_user=''
@@ -50,8 +49,10 @@ class HealthCheckConfig(object):
         self.run_interval_seconds=0
         self.run_counter=0
         self.valid=False
+        self.sendemail=True
         self.email_subject='Email from HealthCheck'
         self.alert_expiry=2*60*60 # 2 hours
+        self.status_jinja2_html_template='status.html.template'
         self.logging_level=DEFAUTL_LOGGING_LEVEL
         self.getConfig()
 
@@ -110,8 +111,6 @@ class HealthCheckConfig(object):
                 pass
             elif 'LOG' == config_key.upper():
                 self.logfile= config[config_key]
-            elif 'OUTPUT' == config_key.upper():
-                self.outputfile= config[config_key]
             elif 'VERBOSE' == config_key.upper():
                 if 'YES' == config[config_key].upper():
                     self.logging_level=logging.DEBUG
@@ -119,6 +118,8 @@ class HealthCheckConfig(object):
                 self.run_interval_seconds= config[config_key]
             elif 'RUN_COUNTER' == config_key.upper():
                 self.run_counter= config[config_key]
+            elif 'STATUS_JINJA2_HTML_TEMPLATE' == config_key.upper():
+                self.status_jinja2_html_template= config[config_key]
             elif 'SMTP' == config_key.upper():
                 for smtp_key in config[config_key]:
                     if 'HOST' == smtp_key.upper():
@@ -136,6 +137,9 @@ class HealthCheckConfig(object):
             elif 'ENABLED' == config_key.upper():
                 if 'YES' == config_key.upper():
                     self.enabled=True
+            elif 'SENDEMAIL' == config_key.upper():
+                if 'YES' == config_key.upper():
+                    self.sendemail=True
             elif 'ENV' == config_key.upper():
                 for env_key in config[config_key]:
                     if 'NAME' == env_key.upper():
@@ -166,7 +170,7 @@ class HealthCheckConfig(object):
 
     def validate(self,configfile):
         log = logging.getLogger('config.HealthCheckConfig.validateConfig()')
-        CONFIG_TOP_KEYS=['env']
+        CONFIG_TOP_KEYS=['env','log','status_jinja2_html_template']
         CONFIG_TOP_ENVKEY='ENV'
         CONFIG_ENVKEYS=['services','name','level']
         CONFIG_SERVICE_KEY='SERVICES'
@@ -181,7 +185,6 @@ class HealthCheckConfig(object):
         FOUND_APPLICATIONS=False
 
         if os.path.exists(configfile):
-
                 try:
                       log.debug("validating configuration %s" % (configfile))
                       with open(configfile) as f:

@@ -175,45 +175,48 @@ class HealthcheckReporter(threading.Thread):
 
         def sendemail(self,content):
             log = logging.getLogger('Healthcheck.sendemail()')
-            curr_time=time.time()
+            if self.config.sendemail:
+                curr_time=time.time()
+                if (curr_time > self.alert_expiry_time or not self.alert_sent):
+                        log.debug("Sending Email")
+                        self.alert_sent=True
+                        self.alert_sent_time=curr_time
+                        self.alert_expiry_time=curr_time+ self.config.alert_expiry
+                        try:
+                            # Create message container - the correct MIME type is multipart/alternative.
+                            log = logging.getLogger('Healthcheck.sendemail()')
+                            msg = MIMEMultipart('alternative')
+                            msg['Subject'] = self.config.email_subject
+                            msg['From'] = self.config.smtp_sender
+                            msg['To'] = self.config.smtp_receiver
+                            html_content=""
 
-            if (curr_time > self.alert_expiry_time or not self.alert_sent):
-                    log.debug("Sending Email")
-                    self.alert_sent=True
-                    self.alert_sent_time=curr_time
-                    self.alert_expiry_time=curr_time+ self.config.alert_expiry
-                    try:
-                        # Create message container - the correct MIME type is multipart/alternative.
-                        log = logging.getLogger('Healthcheck.sendemail()')
-                        msg = MIMEMultipart('alternative')
-                        msg['Subject'] = self.config.email_subject
-                        msg['From'] = self.config.smtp_sender
-                        msg['To'] = self.config.smtp_receiver
-                        html_content=""
 
+                            html_content = content
 
-                        html_content = content
+                            part1 = MIMEText(html_content, 'html')
 
-                        part1 = MIMEText(html_content, 'html')
+                            # Attach parts into message container.
+                            # According to RFC 2046, the last part of a multipart message, in this case
+                            # the HTML message, is best and preferred.
+                            msg.attach(part1)
 
-                        # Attach parts into message container.
-                        # According to RFC 2046, the last part of a multipart message, in this case
-                        # the HTML message, is best and preferred.
-                        msg.attach(part1)
+                            # Send the message via local SMTP server.
+                            #s = smtplib.SMTP('smtp.gmail.com',465)
+                            conn = smtplib.SMTP(self.config.smtp_host,self.config.smtp_port, timeout=30)
+                            #conn.starttls()
+                            #user,password = ('Demo','Test')
+                            #conn.login(user,password)
 
-                        # Send the message via local SMTP server.
-                        #s = smtplib.SMTP('smtp.gmail.com',465)
-                        conn = smtplib.SMTP(self.config.smtp_host,self.config.smtp_port, timeout=30)
-                        #conn.starttls()
-                        #user,password = ('Demo','Test')
-                        #conn.login(user,password)
-
-                        # sendmail function takes 3 arguments: sender's address, recipient's address
-                        # and message to send - here it is sent as one string.
-                        conn.sendmail(self.config.smtp_sender, self.config.smtp_receiver, msg.as_string())
-                        conn.quit()
-                    except (socket.error,socket.gaierror,smtplib.SMTPException) as e:
-                        log.error("Failure to send email: %s" % str(e))
-                        #log.exception(e)
+                            # sendmail function takes 3 arguments: sender's address, recipient's address
+                            # and message to send - here it is sent as one string.
+                            conn.sendmail(self.config.smtp_sender, self.config.smtp_receiver, msg.as_string())
+                            conn.quit()
+                        except (socket.error,socket.gaierror,smtplib.SMTPException) as e:
+                            log.error("Failure to send email: %s" % str(e))
+                            #log.exception(e)
+                else:
+                    log.debug("Last Alert sent has not expired yet")
             else:
-                log.debug("Last Alert sent has not expired yet")
+                log.debug("Email feature disabled in config file")
+                log.debug("set sendemail to yes in config file to send email")
