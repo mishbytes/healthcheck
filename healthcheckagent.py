@@ -7,6 +7,8 @@ import time
 #project
 from utils.pidfile import PidFile
 from utils.daemon import Daemon
+from utils.hosts import get_hostname
+from output import create_status_html
 from config import healthcheckLogging
 from healthcheckreporter import HealthcheckReporter
 
@@ -55,10 +57,12 @@ class HealthcheckAgent(Daemon):
         Daemon.__init__(self, pidfile)
         self.run_forever = True
         self.start_event=True
+        self.host=''
         self.healthcheckreporter = None
         self.check_interval = DEFAULT_CHECK_INTERVAL
         self.check_frequency = DEFAULT_CHECK_FREQUENCY
         self.config_file=''
+        self.host=get_hostname()
 
     def _handle_sigterm(self, signum, frame):
         """Handles SIGTERM and SIGINT, which gracefully stops the agent."""
@@ -102,11 +106,11 @@ class HealthcheckAgent(Daemon):
 
         if config:
             config_file_abs_path=PROJECT_DIR + '/' + config
+
             self.healthcheckreporter=HealthcheckReporter(config_file_abs_path)
             self.check_interval=self.healthcheckreporter.getRunIntervalSeconds()
             self.check_frequency=self.healthcheckreporter.getRunCounter()
             #self.healthcheck=Healthcheck(config)
-
 
         while self.run_forever:
             i=1
@@ -124,6 +128,13 @@ class HealthcheckAgent(Daemon):
                     if self.healthcheckreporter:
                         try:
                             self.healthcheckreporter.start()
+                            create_status_html(path=PROJECT_DIR,
+                                               host=self.host,
+                                               time=self.healthcheckreporter.getLastChecked(),
+                                               total_services=self.healthcheckreporter.getAllServicesCount(),
+                                               total_services_unavailable=self.healthcheckreporter.getBadServicesCount(),
+                                               services_status=self.healthcheckreporter.getBadServicesbyHostJSON()
+                                               )
                             #self.healthcheckreporter.showAlerts()
                             #self.healthcheckreporter.stop()
                             self.healthcheckreporter.running=False

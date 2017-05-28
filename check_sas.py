@@ -94,7 +94,7 @@ def sasLogon(environment,protocol,host,port,application,user,password):
         if socketmsg.errno == 111:
             message="Connection Refused"
         else:
-            message=socketmsg
+            message=str(socketmsg)
             #message="Socket error %d" % socketmsg.errno
         log.debug(socketmsg)
     except socket.gaierror as socketgamsg:

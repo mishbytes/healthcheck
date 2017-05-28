@@ -35,7 +35,7 @@
         <td style="padding: 5px;">
         Total Services Unavailable
         </td>
-        <td align="left">{{ total_service_unavailable }}</td>
+        <td align="left">{{ total_services_unavailable }}</td>
   </tr>
   <tr><td>&nbsp;</td></tr>
 </table>
@@ -55,7 +55,7 @@
             </h2>
           </td>
           <td>
-            <h2 style="width: 100px;
+            <h2 style="width: 130px;
                        font-size: 16px;
                        font-weight: 500;
                        color: #a94442;
@@ -121,24 +121,25 @@
           </td>
     </tr>
 {% for dict_item in service_status_dicts %}
-    {% for dict_item2 in dict_item %}
-        {% set first_host = 1 %}
-        {% set host_count = dict_item[dict_item2]|length %}
-          {% for dict_item3 in dict_item[dict_item2] %}
-              <tr>
-                {% if first_host == 1 %}
-                  <td rowspan="{{ host_count }}">{{ dict_item2 }}</td>
-                {% endif %}
-                <td>{{ dict_item3['service'] }}</td>
-                <td>{{ dict_item3['type'] }}</td>
-                <td>{{ dict_item3['status'] }}</td>
-                <td>{{ dict_item3['last_checked'] }}</td>
-                <td>{{ dict_item3['additional_info'] }}</td>
-              </tr>
-              {% set first_host = -1 %}
-          {% endfor %}
-
-    {% endfor %}
+  {% set each_host_services_count = service_status_dicts[dict_item]|length %}
+  {% set first_host = 1 %}
+  {% for dict_item2 in service_status_dicts[dict_item] %}
+        <tr>
+          {% if first_host == 1 %}
+            <td rowspan="{{ each_host_services_count }}">{{ dict_item }}</td>
+          {% endif %}
+          <td>{{ dict_item2['service'] }}</td>
+          <td>{{ dict_item2['type'] }}</td>
+          {% if dict_item2['status'] == 1 %}
+            <td>Available</td>
+          {% else %}
+            <td>Not Available</td>
+          {% endif %}
+          <td>{{ dict_item2['last_checked'] }}</td>
+          <td>{{ dict_item2['additional_info'] }}</td>
+        </tr>
+        {% set first_host = -1 %}
+  {% endfor %}
 {% endfor %}
 </table>
 </div>

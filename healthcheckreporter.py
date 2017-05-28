@@ -48,13 +48,11 @@ class HealthcheckReporter(threading.Thread):
             self.last_service=None
             self.running=False
             self.start_event=True
-            self.status_dict={}
-            self.status_dict["hostname"]="myhost"
-            self.status_dict["timestamp"]=str(datetime.now())
-            self.status_dict["output"]=[]
+            self.last_checked = ''
             self.status_output=[]
             #Initialize Health check from configuration file config.json
             self.config=HealthCheckConfig(configfile,configcheck=configcheck)
+            self.allservices=[]
             #As this class is a thread, disable sys stdout and stderr
             sys.stdout = open('/dev/null', 'w')
             sys.stderr = open('/dev/null', 'w')
@@ -84,11 +82,13 @@ class HealthcheckReporter(threading.Thread):
                 try:
                     if self.config.services:
                         log.debug("** Status check begins **")
+                        self.last_checked = str(datetime.now())
                         for service in self.config.services:
                             log.debug("Environment: %s Application: %s Hosts: %s" % (service.environment,
                                                                                      service.name,service.hosts))
                             self.last_service=service
                             service.status()
+                            self.allservices.append(service)
                         log.debug("** Status check ends **")
                     else:
                         log.debug("No applications loaded")
@@ -101,52 +101,87 @@ class HealthcheckReporter(threading.Thread):
         def save(self,type="",filename=''):
             log = logging.getLogger('Healthcheck.save()')
 
-        def showAlerts(self):
-            log = logging.getLogger('Healthcheck.showAlerts()')
-            self.running=True
-            collect_alerts=[]
-            if self.status_dict:
-                for status_property in self.status_dict:
-                    if status_property.upper() == "OUTPUT":
-                        for output in self.status_dict["output"]:
-                            if isinstance(output["value"], dict):
-                                for dict_key, dict_value in output["value"].iteritems():
-                                    if not dict_value:
-                                        msg = "%s:%s is unavailable via host %s <br>" % (output["application_type"],output["application"],dict_key)
-                                        collect_alerts.append(msg)
-                            elif not output["value"]:
-                                log.info("%s:%s is unavailable via host %s" % (output["application_type"],output["application"],output["hosts"]))
 
-                                #log.info(output["application"])
-                #self.sendemail(collect_alerts)
+        def getLastChecked(self):
+            log = logging.getLogger('Healthcheck.getLastChecked()')
+            return self.last_checked
 
+        def getAllServicesCount(self):
+            log = logging.getLogger('Healthcheck.getAllServicesCount()')
+            log.debug("Available services %s" % len(self.allservices))
+            if self.allservices:
+                log.debug("Available services %s" % len(self.allservices))
+                return len(self.allservices)
             else:
-                log.info("Empty status, nothing to save")
+                return 0
+        def getBadServicesCount(self):
+            log = logging.getLogger('Healthcheck.getBadServicesCount()')
+            countbadservices=0
+            if self.allservices:
+                for service in self.allservices:
+                    if not service.available:
+                        countbadservices+=1
+            return countbadservices
+
+        def getBadServicesbyHostJSON(self):
+            log = logging.getLogger('Healthcheck.getBadServicesbyHostJSON()')
+            output={}
+            if self.allservices:
+                for service in self.allservices:
+                        if isinstance(service.hosts, list):
+                            for host in service.hosts:
+                                if not service.available[host]:
+                                    log.debug("Check whether service %s is available on %s host" % (service.name,host))
+                                    if not host in output:
+                                        output[host]=[]
+                                    output[host].append(
+                                                {"service":service.name,
+                                                  "type":service.type,
+                                                  "status":service.available[host],
+                                                  "last_checked":service.last_checked,
+                                                  "additional_info":service.message[host]
+                                                  }
+                                                )
+                                else:
+                                    #Service Available
+                                    pass
+                                #output[host]={"additional_info":service.message}
+                        else:
+                            log.debug("Check whether service %s is available on %s host" % (service.name,service.hosts))
+                            if not service.available:
+                                host=service.hosts
+                                if not host in output:
+                                    output[host]=[]
+                                output[host].append(
+                                            {"service":service.name,
+                                              "type":service.type,
+                                              "status":service.available,
+                                              "last_checked":service.last_checked,
+                                              "additional_info":service.message
+                                              }
+                                            )
+
+
+            log.debug("Bad Services")
+            log.debug(json.dumps(output,indent=4))
+            return output
+
+                    #self.return_code=response["return_code"]
+                    #self.available=response["value"]
+                    #self.message=response["message"]
 
         def sendemail(self,content):
             try:
                 # Create message container - the correct MIME type is multipart/alternative.
                 log = logging.getLogger('Healthcheck.sendemail()')
                 msg = MIMEMultipart('alternative')
-                msg['Subject'] = "Email from Python Program"
+                msg['Subject'] = self.config.email_subject
                 msg['From'] = self.config.smtp_sender
                 msg['To'] = self.config.smtp_receiver
                 html_content=""
 
 
-                begin_html="""
-                              <html>
-                                <head></head>
-                                <body>
-                           """
-                end_html="""
-                                </body>
-                              </html>
-                          """
-                for alertmsg in content:
-                  html_content += alertmsg
-
-                html_content = begin_html + html_content + end_html
+                html_content = content
 
                 part1 = MIMEText(html_content, 'html')
 
