@@ -6,13 +6,13 @@ from jinja2 import Environment, FileSystemLoader
 def render_template(context,template_dir='/tmp',template_filename='status.html.template'):
     TEMPLATE_ENVIRONMENT = Environment(
         autoescape=False,
-        loader=FileSystemLoader(PATH),
+        loader=FileSystemLoader(template_dir),
         trim_blocks=False)
     return TEMPLATE_ENVIRONMENT.get_template(template_filename).render(context)
 
 
 def generateStatusHtmlPage(path='/tmp',host='',time='',total_services=0,total_services_unavailable=0,services_status={}):
-    log = logging.getLogger('output.create_status_html()')
+    log = logging.getLogger('output.generateStatusHtmlPage()')
     fname = path + '/' + "status.html"
 
     context = {
