@@ -2,18 +2,6 @@ import os
 import logging
 from jinja2 import Environment, FileSystemLoader
 
-from config import healthcheckLogging
-
-PATH = os.path.dirname(os.path.abspath(__file__))
-
-DEFAUTL_CONSOLE_LOG_FILENAME='console.log'
-def consoleLogging(filename=None):
-    if filename:
-        healthcheckLogging(filename=DEFAUTL_CONSOLE_LOG_FILENAME,default_level=DEFAUTL_LOGGING_LEVEL)
-    else:
-        healthcheckLogging(default_level=logging.DEBUG)
-
-consoleLogging()
 
 def render_template(context,template_dir='/tmp',template_filename='status.html.template'):
     TEMPLATE_ENVIRONMENT = Environment(
@@ -45,11 +33,11 @@ def generateStatusHtmlPage(path='/tmp',host='',time='',total_services=0,total_se
     return html
 
 
-def main():
-    generateStatusHtmlPage(path=os.path.dirname(os.path.abspath(__file__)))
+#def main():
+#    generateStatusHtmlPage(path=os.path.dirname(os.path.abspath(__file__)))
 
 
 ########################################
 
-if __name__ == "__main__":
-    main()
+#if __name__ == "__main__":
+#    main()
