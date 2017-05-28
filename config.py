@@ -51,6 +51,9 @@ class HealthCheckConfig(object):
         self.run_counter=0
         self.valid=False
         self.email_subject='Email from HealthCheck'
+        self.alert_sent=False
+        self.alert_expiry=2*60*60 # 2 hours
+        self.alert_sent_time=0
         self.logging_level=DEFAUTL_LOGGING_LEVEL
         self.getConfig()
 

@@ -8,7 +8,7 @@ import time
 from utils.pidfile import PidFile
 from utils.daemon import Daemon
 from utils.hosts import get_hostname
-from output import create_status_html
+from output import generateStatusHtmlPage
 from config import healthcheckLogging
 from healthcheckreporter import HealthcheckReporter
 
@@ -128,7 +128,7 @@ class HealthcheckAgent(Daemon):
                     if self.healthcheckreporter:
                         try:
                             self.healthcheckreporter.start()
-                            create_status_html(path=PROJECT_DIR,
+                            badservice_html=generateStatusHtmlPage(path=PROJECT_DIR,
                                                host=self.host,
                                                time=self.healthcheckreporter.getLastChecked(),
                                                total_services=self.healthcheckreporter.getAllServicesCount(),
@@ -137,6 +137,7 @@ class HealthcheckAgent(Daemon):
                                                )
                             #self.healthcheckreporter.showAlerts()
                             #self.healthcheckreporter.stop()
+                            self.healthcheckreporter.sendemail(badservice_html)
                             self.healthcheckreporter.running=False
                         finally:
                             self.healthcheckreporter.running=False
