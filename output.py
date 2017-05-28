@@ -67,7 +67,7 @@ def create_status_html():
         'service_status_dicts': service_status_dicts,
         'total_services':3,
         'total_service_unavailable':2,
-        'total_hosts':1
+        'report_title':'Health Check Report Executed from Hostname at 01-01-2006 19:34:30'
     }
     #
     with open(fname, 'w') as f:

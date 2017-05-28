@@ -10,7 +10,7 @@
 
 <div style="max-width:850px; margin:0 auto;">
 
-<p align="center" style="background-color: #f5f5f5;width:100%" >Health Check Report Executed from Hostname at 01-01-2006 19:34:30</p>
+<p align="center" style="background-color: #f5f5f5;width:100%" >{{ report_title }}</p>
 
 <table border="0"
        cellpadding="0"
