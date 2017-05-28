@@ -1,0 +1,42 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title></title>
+</head>
+<body>
+
+<!--[if mso]>
+<left>
+<table><tr><td width="680px">
+<![endif]-->
+
+<div style="max-width:850px; margin:0 auto;">
+
+<p align="center" style="background-color: #f5f5f5;width:100%" >Health Check Report Executed from Hostname at 01-01-2006 19:34:30</p>
+
+<table border="0" cellpadding="0" cellspacing="0" style="margin-left: auto; margin-right: auto; padding-left: 15px; padding-right: 15px; width: 100%;">
+
+{% for dict_item in app_status_dicts %}
+     <tr >
+       <td align="left" style="  background-color: #f5f5f5;margin-bottom: 5px; min-height: 10px; padding: 9px;">
+         <h4 style="color: #a94442; font-family: inherit; font-size: 16px; font-weight: 500; line-height: 0.1; margin-bottom: 10px; margin-top: 10px; white-space: nowrap;"> {{dict_item['AppName']}} </h4>
+      </td>
+      {% if dict_item['Status'] == 1 %}
+        <td align="right" style="  background-color: #f5f5f5;margin-bottom: 5px; min-height: 10px; padding: 9px;">
+          <span style="background-color: #5cb85c; color: #3c763d; font-size: 16px; font-weight: 500; line-height: 0.05; padding: .2em .6em .3em; text-align: right; vertical-align: baseline; white-space: nowrap; width:100px"> Service Available </span>
+        </td>
+      {% else %}
+        <td align="right" style="  background-color: #f5f5f5;margin-bottom: 5px; min-height: 10px; padding: 9px;">
+          <span style="background-color: #a94442; color: #fff; font-size: 16px; font-weight: 500; line-height: 0.1; padding: .2em .6em .3em; text-align: right; vertical-align: baseline; white-space: nowrap;  "> &nbsp;&nbsp;&nbsp;Service Down&nbsp;&nbsp;&nbsp; </span>
+        </td>
+      {% endif %}
+
+     </tr>
+{% endfor %}
+
+</table>
+</div>
+<!--[if mso]>
+</td></tr></table>
+</left>
+<![endif]-->
+
+</body></html>

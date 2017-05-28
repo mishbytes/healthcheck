@@ -27,8 +27,8 @@ class Service(object):
         self.available=False
         self.return_code=9999
         self.message=''
-        self.timestamp=None
-        self.timeoutseconds=30
+        self.last_checked=None
+        self.command_timeoutseconds=30
 
 
     def isAvailable(self):
@@ -38,8 +38,8 @@ class Service(object):
         log = logging.getLogger('Service.status()')
         if self.type.upper() == 'WEBAPP':
             #response={"value":True|False,"return_code":return_code,"message":message}
-            logging.debug("Checking Web: %s://%s:%s/%s" % (self.protocol,self.hosts,self.port,self.name))
-            self.timestamp=str(datetime.now())
+            logging.debug("Checking WebApp: %s://%s:%s/%s" % (self.protocol,self.hosts,self.port,self.name))
+            self.last_checked=str(datetime.now())
             response=sasLogon(self.environment,
                               self.protocol,
                               self.hosts,
@@ -54,7 +54,7 @@ class Service(object):
 
         elif self.type.upper() == 'DISK':
             logging.debug("Checking Disk")
-            self.timestamp=str(datetime.now())
+            self.last_checked=str(datetime.now())
             response=getDiskStatus(self.environment,
                                    self.hosts,
                                    self.name)
