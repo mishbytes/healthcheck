@@ -86,7 +86,7 @@ class HealthcheckAgent(Daemon):
         if self.healthcheckreporter.running:
             log.debug("Timed out waiting for current healthcheck reporter to finish")
             self.healthcheckreporter.stop()
-        log.info("Exit")
+        log.info("Exiting. Bye bye.")
         raise SystemExit
 
     @classmethod
@@ -141,7 +141,7 @@ class HealthcheckAgent(Daemon):
                             total_time=time.time()-start_time
                             log.info("Send alert finished at %s" % str(datetime.now()))
                             log.info("Send alert took %s seconds to complete" % total_time)
-                            
+
                             self.healthcheckreporter.running=False
                         finally:
                             self.healthcheckreporter.running=False
