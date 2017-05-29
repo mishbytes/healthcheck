@@ -3,12 +3,11 @@ import signal
 import os
 import sys
 import time
+from datetime import datetime
 
 #project
 from utils.pidfile import PidFile
 from utils.daemon import Daemon
-from utils.hosts import get_hostname
-from output import generateStatusHtmlPage
 from config import healthcheckLogging
 from healthcheckreporter import HealthcheckReporter
 
@@ -33,7 +32,7 @@ PROJECT_LOG=PROJECT_DIR + '/' + DEFAUTL_LOG_FILENAME
 #Interval
 #DEFAULT_CHECK_INTERVAL=1*60*60 #1 Hour
 DEFAULT_CHECK_INTERVAL=120 #Seconds
-DEFAULT_CHECK_FREQUENCY=1
+DEFAULT_CHECK_FREQUENCY=2
 
 def consoleLogging(filename=None):
     if filename:
@@ -62,14 +61,14 @@ class HealthcheckAgent(Daemon):
         self.check_interval = DEFAULT_CHECK_INTERVAL
         self.check_frequency = DEFAULT_CHECK_FREQUENCY
         self.config_file=''
-        self.host=get_hostname()
+        #self.host=get_hostname()
 
     def _handle_sigterm(self, signum, frame):
         """Handles SIGTERM and SIGINT, which gracefully stops the agent."""
         log = logging.getLogger('HealthCheckAgent._handle_sigterm()')
         log.info("Caught sigterm. Stopping run loop.")
 
-        log.debug("Parent Process id is: %s" % (super(Daemon, self).pid()))
+        #log.debug("Parent Process id is: %s" % (super(Daemon, self).pid()))
         self.run_forever = False
         self.start_event = False
 
@@ -107,7 +106,7 @@ class HealthcheckAgent(Daemon):
         if config:
             config_file_abs_path=PROJECT_DIR + '/' + config
 
-            self.healthcheckreporter=HealthcheckReporter(config_file_abs_path)
+            self.healthcheckreporter=HealthcheckReporter(config_file_abs_path,project_dir=PROJECT_DIR)
             self.check_interval=self.healthcheckreporter.getRunIntervalSeconds()
             self.check_frequency=self.healthcheckreporter.getRunCounter()
             #self.healthcheck=Healthcheck(config)
@@ -124,27 +123,33 @@ class HealthcheckAgent(Daemon):
                                 time.sleep(DEFAULT_KILL_TIMEOUT)
                             else:
                                 break
-                    log.info("Starting HealthCheck instance# %d" % i)
+
+
                     if self.healthcheckreporter:
                         try:
+
+                            log.info("HealthCheck started at %s" % str(datetime.now()))
+                            start_time=time.time()
                             self.healthcheckreporter.start()
-                            badservice_html=generateStatusHtmlPage(path=PROJECT_DIR,
-                                               host=self.host,
-                                               time=self.healthcheckreporter.getLastChecked(),
-                                               total_services=self.healthcheckreporter.getAllServicesCount(),
-                                               total_services_unavailable=self.healthcheckreporter.getBadServicesCount(),
-                                               services_status=self.healthcheckreporter.getBadServicesbyHostJSON()
-                                               )
-                            #self.healthcheckreporter.showAlerts()
-                            #self.healthcheckreporter.stop()
-                            self.healthcheckreporter.sendemail(badservice_html)
+                            total_time=time.time()-start_time
+                            log.info("HealthCheck finished at %s" % str(datetime.now()))
+                            log.info("HealthCheck took %s seconds to complete" % total_time)
+
+                            log.info("Send alert started at %s" % str(datetime.now()))
+                            start_time=time.time()
+                            self.healthcheckreporter.alert()
+                            total_time=time.time()-start_time
+                            log.info("Send alert finished at %s" % str(datetime.now()))
+                            log.info("Send alert took %s seconds to complete" % total_time)
+                            
                             self.healthcheckreporter.running=False
                         finally:
                             self.healthcheckreporter.running=False
                     else:
                         self.healthcheckreporter.stop()
                         log.error("Unable to to run HealthCheck")
-                    log.info("Finished HealthCheck instance# %d" % i)
+
+
                     i+=1
 
                 else:
