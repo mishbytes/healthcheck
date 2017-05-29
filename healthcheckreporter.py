@@ -191,23 +191,24 @@ class HealthcheckReporter(threading.Thread):
             badservices=self.getBadServicesbyHostJSON()
             alertservices={}
             alert_added=False
+            alert_lifetime=self.config.alert_lifetime
             for host,services in badservices.iteritems():
                 alertservices[host]=[]
                 for service in services:
                     id=service['service_id']
                     if id in self.servicealerts:
                         last_alert_time=self.servicealerts[id]
-                        time_since_last_alert=time.time() - last_alert_time
-                        if time_since_last_alert > 3*60:
-                            log.debug("Alert for for service %s" % service)
+                        age_of_last_alert=time.time() - last_alert_time
+                        if age_of_last_alert > alert_lifetime:
+                            log.debug("Age of Alert for service %s exceeded alert life time %s" % (service,alert_lifetime))
                             log.debug("Add service to alert list %s" % service)
                             self.servicealerts[id]=time.time()
                             alert_added=True
                             alertservices[host].append(service)
                         else:
-                            log.debug("Last Alert not expired for service %s" % service)
+                            log.debug("Last Alert for service %s not expired " % service)
                     else:
-                        log.debug("First alert for service %s" % service)
+                        log.debug("This first alert for service %s since agent start" % service)
                         self.servicealerts[id]=time.time()
                         alert_added=True
                         alertservices[host].append(service)

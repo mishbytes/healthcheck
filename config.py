@@ -51,7 +51,7 @@ class HealthCheckConfig(object):
         self.valid=False
         self.sendemail=True
         self.email_subject='Email from HealthCheck'
-        self.alert_expiry=2*60*60 # 2 hours
+        self.alert_lifetime=2*60*60 # 2 hours
         self.status_jinja2_html_template='status.html.template'
         self.logging_level=DEFAUTL_LOGGING_LEVEL
         self.getConfig()
@@ -70,7 +70,7 @@ class HealthCheckConfig(object):
             else:
                 #set get verbose and logfile options from config.json
                 self.setLogOptions(config_data)
-                healthcheckLogging(default_level=self.logging_level,filename=self.logfile) #Write to log
+                rc=healthcheckLogging(default_level=self.logging_level,filename=self.logfile) #Write to log
 
         except (IOError, OSError) as e:
             log.error("Error occurred while loading json file")
@@ -116,6 +116,8 @@ class HealthCheckConfig(object):
                     self.logging_level=logging.DEBUG
             elif 'RUN_INTERVAL_SECONDS' == config_key.upper():
                 self.run_interval_seconds= config[config_key]
+            elif 'ALERT_LIFETIME' == config_key.upper():
+                self.alert_lifetime= config[config_key]
             elif 'RUN_COUNTER' == config_key.upper():
                 self.run_counter= config[config_key]
             elif 'STATUS_JINJA2_HTML_TEMPLATE' == config_key.upper():

@@ -8,6 +8,7 @@
 "status_jinja2_html_template":"/data/projects/sas/healthcheck/githubproject/status.html.template",
 "run_interval_seconds":60,
 "run_counter":10,
+"alert_lifetime":7200,
 "verbose":"yes",
 "env":
       {
