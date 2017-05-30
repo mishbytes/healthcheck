@@ -127,7 +127,7 @@
   {% for dict_item2 in service_status_dicts[dict_item] %}
         <tr>
           {% if vars.first_row %}
-            <td rowspan="{{ each_host_services_count }}">{{ dict_item }}</td>
+            <td rowspan="{{ each_host_services_count }}">{{ hosts_friendlyname[dict_item]}} ({{ dict_item }}) </td>
             {% if vars.update({'first_row': False}) %} {% endif %}
           {% endif %}
           <td>{{ dict_item2['service'] }}</td>

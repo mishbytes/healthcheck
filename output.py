@@ -12,7 +12,11 @@ def render_template(context,template_dir='/tmp',template_filename='status.html.t
     return TEMPLATE_ENVIRONMENT.get_template(template_filename).render(context)
 
 
-def generateStatusHtmlPage(path='/tmp',host='',time='',total_services=0,total_services_unavailable=0,services_status={}):
+def generateStatusHtmlPage(path='/tmp',host='',time='',
+                           total_services=0,
+                           total_services_unavailable=0,
+                           hosts_friendlyname={},
+                           services_status={}):
     log = logging.getLogger('output.generateStatusHtmlPage()')
     fname = path + '/' + "status.html"
 
@@ -21,6 +25,7 @@ def generateStatusHtmlPage(path='/tmp',host='',time='',total_services=0,total_se
         'service_status_dicts': services_status,
         'total_services':total_services,
         'total_services_unavailable':total_services_unavailable,
+        'hosts_friendlyname':hosts_friendlyname,
         'report_title':'Health Check Report Executed from %s at %s' % (host,time)
     }
     log.debug("jinja2 context %s" % json.dumps(context,indent=4))

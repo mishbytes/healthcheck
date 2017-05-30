@@ -26,30 +26,24 @@ from email.mime.text import MIMEText
 
 #project
 from service import Service
-from config import HealthCheckConfig
+from configv2 import HealthCheckConfig
 from utils.hosts import get_hostname
 from output import generateStatusHtmlPage
 
-def getHostName():
-    if socket.gethostname().find('.')>=0:
-        name=socket.gethostname()
-    else:
-        try:
-            name=socket.gethostbyaddr(socket.gethostname())[0]
-        except socket.gaierror:
-            name=socket.gethostname()
-    return name
-
+DEFAULT_CONFIG_FILE='configv2.json'
 
 log = logging.getLogger('HealthCheckReporter')
 
 class HealthcheckReporter(threading.Thread):
 
-        def __init__(self,configfile,project_dir='/healthcheck',configcheck=False):
+        def __init__(self,configfile,cwd='/tmp',configcheck=False):
             threading.Thread.__init__(self)
             self.finished = threading.Event()
             self.host=get_hostname()
-            self.project_dir=project_dir
+
+            #CWD is current working directory for reporter where it can find jinja2 template file
+            self.cwd=cwd
+
             self.last_service=None
             self.running=False
             self.start_event=True
@@ -59,7 +53,7 @@ class HealthcheckReporter(threading.Thread):
             self.last_checked = ''
             self.status_output=[]
             #Initialize Health check from configuration file config.json
-            self.config=HealthCheckConfig(configfile,configcheck=configcheck)
+            self.config=HealthCheckConfig(configfile,cwd,configcheck=configcheck)
             self.allservices=[]
             self.servicealerts={}
             #As this class is a thread, disable sys stdout and stderr
@@ -74,11 +68,11 @@ class HealthcheckReporter(threading.Thread):
             self.finished.set()
             log.info("HealthcheckReporter thread stopped")
 
-        def getRunIntervalSeconds(self):
-            return self.config.run_interval_seconds
+        def getInterval(self):
+            return self.config.interval
 
-        def getRunCounter(self):
-            return self.config.run_counter
+        def getFrequency(self):
+            return self.config.frequency
 
         def valid(self):
             return self.config.valid
@@ -94,7 +88,7 @@ class HealthcheckReporter(threading.Thread):
                         self.last_checked = str(datetime.now())
                         for service in self.config.services:
                             log.debug("Environment: %s Application: %s Hosts: %s" % (self.config.env_name,
-                                                                                     service.name,service.hosts))
+                                                                                     service.name,service.hosts.keys()))
                             self.last_service=service
                             service.status()
                             self.allservices.append(service)
@@ -132,49 +126,50 @@ class HealthcheckReporter(threading.Thread):
                         countbadservices+=1
             return countbadservices
 
-        def getBadServicesbyHostJSON(self):
-            log = logging.getLogger('Healthcheck.getBadServicesbyHostJSON()')
+        def getHostsfriendlyname(self):
+            log = logging.getLogger('Healthcheck.getHostsfriendlyname()')
+            hosts_desc={}
+            for service in self.allservices:
+                for host,desc in service.hosts.items():
+                    hosts_desc[host]=desc
+            log.debug("Host friendly names %s" % json.dumps(hosts_desc,indent=4))
+            return hosts_desc
+
+
+        def getOfflineServices(self):
+            log = logging.getLogger('Healthcheck.getOfflineServices()')
             output={}
             if self.allservices:
                 for service in self.allservices:
-                        log.debug("Service name %s available property: %s" % (service.name,service.available))
-                        if isinstance(service.hosts, list):
-                            for host in service.hosts:
-                                if not service.available[host]:
-                                    log.debug("Check whether service %s is available on %s host" % (service.name,host))
-                                    if not host in output:
-                                        output[host]=[]
-                                    #service_id used to keep track of alerts
-                                    service_id=hashlib.md5(host + service.name).hexdigest()
-                                    output[host].append(
-                                                {"service":service.name,
-                                                  "type":service.type,
-                                                  "status":service.available[host],
-                                                  "last_checked":service.last_checked,
-                                                  "additional_info":service.message[host],
-                                                  "service_id":service_id
-                                                  }
-                                                )
-                                else:
-                                    #Service Available
-                                    pass
-                                #output[host]={"additional_info":service.message}
+                    for host in service.hosts:
+                        log.debug("Service Host %s" % str(host))
+                        host_str=str(host)
+                        service_id=hashlib.md5(host_str + service.name).hexdigest()
+                        if isinstance(service.available, bool):
+                            #single host service availablility
+                            log.debug("Service %s" % service.available)
+                            availablility=service.available
+                            message=service.message
+                        elif isinstance(service.available, dict):
+                            #multiple host service availablility
+                            log.debug("Service %s" % service.available[host])
+                            availablility=service.available[host]
+                            message=service.message[host]
                         else:
-                            log.debug("Check whether service %s is available on %s host" % (service.name,service.hosts))
-                            if not service.available:
-                                host=service.hosts
-                                if not host in output:
-                                    output[host]=[]
-                                #service_id used to keep track of alerts
-                                service_id=hashlib.md5(host + service.name).hexdigest()
-                                output[host].append(
-                                            {"service":service.name,
-                                              "type":service.type,
-                                              "status":service.available,
-                                              "last_checked":service.last_checked,
-                                              "additional_info":service.message,
-                                              "service_id":service_id
-                                              }
+                            log.debug("Unknown available data type")
+
+                        if not host in output:
+                            output[host]=[]
+
+                        output[host].append(
+                                            {
+                                                "service":service.name,
+                                                "type":service.type,
+                                                "status":availablility,
+                                                "last_checked":service.last_checked,
+                                                "additional_info":message,
+                                                "service_id":service_id
+                                            }
                                             )
 
 
@@ -189,7 +184,8 @@ class HealthcheckReporter(threading.Thread):
 
         def alert(self):
             log = logging.getLogger('Healthcheck.alert()')
-            badservices=self.getBadServicesbyHostJSON()
+            badservices=self.getOfflineServices()
+            hosts_fn=self.getHostsfriendlyname()
             alertservices={}
             alert_added=False
             alert_lifetime=self.config.alert_lifetime
@@ -221,11 +217,12 @@ class HealthcheckReporter(threading.Thread):
             #service_alert_id=hashlib.md5(host + service['service']).hexdigest()
             if alert_added:
 
-                badservice_html=generateStatusHtmlPage(path=self.project_dir,
+                badservice_html=generateStatusHtmlPage(path=self.cwd,
                                                        host=self.host,
                                                        time=self.getLastChecked(),
                                                        total_services=self.getAllServicesCount(),
                                                        total_services_unavailable=self.getBadServicesCount(),
+                                                       hosts_friendlyname=hosts_fn,
                                                        services_status=alertservices
                                                        )
                 log.debug("HTML Output")
@@ -236,7 +233,7 @@ class HealthcheckReporter(threading.Thread):
 
         def sendemail(self,content):
             log = logging.getLogger('Healthcheck.sendemail()')
-            if self.config.sendemail:
+            if self.config.email_enabled:
                 curr_time=time.time()
                 log.debug("Sending Email at %s " % str(datetime.now()))
                 try:

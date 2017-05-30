@@ -8,39 +8,29 @@ from datetime import datetime
 #project
 from utils.pidfile import PidFile
 from utils.daemon import Daemon
-from config import healthcheckLogging
+from configv2 import healthcheckLogging
+from configv2 import createLogfile
 from healthcheckreporter import HealthcheckReporter
 
 os.umask(022)
 
 #CONSTANTS
-DEFAULT_CONFIG_FILE='config.json'
+DEFAULT_CONFIG_FILE='configv2.json'
 DEFAUTL_LOGGING_LEVEL=logging.INFO
 DEFAUTL_LOG_FILENAME='healthcheck.log'
-ENABLE_CONSOLE_LOG=True
-DEFAUTL_CONSOLE_LOG_FILENAME='console.log'
+DEFAULT_WAIT_TIME_BEFORE_KILL=1*60
+
 START_COMMANDS = ['start', 'restart']
-DEFAULT_KILL_TIMEOUT=10
+
 
 #PATHs
-PROJECT_DIR=os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILENAME='configv2.json'
+CURRENT_WORKING_DIR=os.path.dirname(os.path.abspath(__file__))
 PID_NAME = __file__
-PID_DIR = PROJECT_DIR
-PROJECT_LOG=PROJECT_DIR + '/' + DEFAUTL_LOG_FILENAME
+PID_DIR = CURRENT_WORKING_DIR
+AGENT_LOG=CURRENT_WORKING_DIR + '/' + DEFAUTL_LOG_FILENAME
 
 
-#Interval
-#DEFAULT_CHECK_INTERVAL=1*60*60 #1 Hour
-DEFAULT_CHECK_INTERVAL=120 #Seconds
-DEFAULT_CHECK_FREQUENCY=2
-
-def consoleLogging(filename=None):
-    if filename:
-        healthcheckLogging(filename=DEFAUTL_CONSOLE_LOG_FILENAME,default_level=DEFAUTL_LOGGING_LEVEL)
-    else:
-        healthcheckLogging(default_level=DEFAUTL_LOGGING_LEVEL)
-
-consoleLogging()
 #global
 log = logging.getLogger(__name__)
 
@@ -49,6 +39,8 @@ def disableLogging():
     #logging.getLogger("config").setLevel(logging.WARNING)
 
 #disableLogging()
+DEFAULT_CHECK_INTERVAL=60
+DEFAULT_CHECK_FREQUENCY=1
 
 class HealthcheckAgent(Daemon):
     log = logging.getLogger('HealthCheckAgent')
@@ -73,7 +65,7 @@ class HealthcheckAgent(Daemon):
         self.start_event = False
 
         if self.healthcheckreporter:
-            t_end = time.time() + 1*60 #One minutes
+            t_end = time.time() + DEFAULT_WAIT_TIME_BEFORE_KILL #One minutes
             while time.time() < t_end:
                 if self.healthcheckreporter.running:
                     t_left = t_end - time.time()
@@ -94,7 +86,7 @@ class HealthcheckAgent(Daemon):
         logging.getLogger().setLevel(logging.ERROR)
         return "Info"
 
-    def run(self, config='config.json'):
+    def run(self, config=DEFAULT_CONFIG_FILE):
         log = logging.getLogger("HealcheckAgent.run()")
 
         """Main loop of the healthcheck"""
@@ -104,13 +96,11 @@ class HealthcheckAgent(Daemon):
         signal.signal(signal.SIGINT, self._handle_sigterm)
 
         if config:
-            config_file_abs_path=PROJECT_DIR + '/' + config
+            self.healthcheckreporter=HealthcheckReporter(CURRENT_WORKING_DIR + '/' + config,cwd=CURRENT_WORKING_DIR)
+            self.check_interval=self.healthcheckreporter.getInterval()
+            self.check_frequency=self.healthcheckreporter.getFrequency()
 
-            self.healthcheckreporter=HealthcheckReporter(config_file_abs_path,project_dir=PROJECT_DIR)
-            self.check_interval=self.healthcheckreporter.getRunIntervalSeconds()
-            self.check_frequency=self.healthcheckreporter.getRunCounter()
-            #self.healthcheck=Healthcheck(config)
-
+        log.debug("Run %s time at interval %s" % (self.check_frequency,self.check_interval))
         while self.run_forever:
             i=1
             while i <= self.check_frequency:
@@ -189,6 +179,7 @@ def main(argv):
         return 3
 
     if command in COMMANDS_AGENT:
+        createLogfile(CURRENT_WORKING_DIR + '/' + CONFIG_FILENAME)
         hcagent = HealthcheckAgent(PidFile(PID_NAME, PID_DIR).get_path())
 
     if command in START_COMMANDS:
@@ -196,6 +187,7 @@ def main(argv):
         pass
 
     if 'start' == command:
+        log.info("Starting Agent")
         hcagent.start()
         #agent.start()
 
@@ -216,7 +208,7 @@ def main(argv):
         return "Health Check Version: 1.0"
 
     elif 'configcheck' == command or 'configtest' == command:
-        config_file_abs_path=PROJECT_DIR + '/config.json'
+        config_file_abs_path=CURRENT_WORKING_DIR + '/configv2.json'
         healthcheckreporter=HealthcheckReporter(config_file_abs_path,configcheck=True)
         if healthcheckreporter.valid():
             log.info("Configuration file %s is valid" % config_file_abs_path)

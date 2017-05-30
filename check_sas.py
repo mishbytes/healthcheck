@@ -23,11 +23,11 @@ def sasLogon(environment,protocol,host,port,application,user,password,debug=Fals
     try:
 
         log.debug("Establishing HTTPS connection : %s://%s:%s " % (protocol,host,port))
-        conn = httplib.HTTPSConnection(host,port,timeout=10)
+        conn = httplib.HTTPSConnection(host,port,timeout=60)
         #Rquest Start time
-        log.debug("Establised HTTPS connection : %s://%s:%s " % (protocol,host,port))
         conn.request("POST","/SASLogon/v1/tickets/",params_logon,headers)
         response = conn.getresponse()
+        log.debug("Establised HTTPS connection : %s://%s:%s " % (protocol,host,port))
         response.read()
 
         return_code = response.status

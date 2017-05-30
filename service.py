@@ -16,7 +16,9 @@ class Service(object):
         self.level=environment
         self.name=name
         self.type=type
+        self.hosts_list=[]
         self.hosts=hosts
+        self.hosts_str='unknown'
         self.port=port
         self.protocol=protocol
         self.user=user
@@ -32,6 +34,13 @@ class Service(object):
         self.last_checked=None
         self.command_timeoutseconds=30
 
+        #Extract host from dictionary key
+        if len(self.hosts) > 1:
+            for hosts in  self.hosts:
+                self.hosts_list.append(str(hosts))
+        else:
+            self.hosts_str=str(hosts.keys()[0])
+
 
     def isAvailable(self):
         return self.available
@@ -39,13 +48,17 @@ class Service(object):
     def status(self):
         log = logging.getLogger('Service.status()')
         log.debug("Is debug enabled for service %s? %s" % (self.name,self.debug_boolean))
+        hosts_list=[]
+        hosts_str=''
+
+
         if self.type.upper() == 'WEBAPP':
             #response={"value":True|False,"return_code":return_code,"message":message}
             #log.debug("Checking WebApp: %s://%s:%s/%s" % (self.protocol,self.hosts,self.port,self.name))
             self.last_checked=str(datetime.now())
             response=sasLogon(self.environment,
                               self.protocol,
-                              self.hosts,
+                              self.hosts_str,
                               self.port,
                               self.name,
                               self.user,
@@ -60,7 +73,7 @@ class Service(object):
             logging.debug("Checking Disk")
             self.last_checked=str(datetime.now())
             response=getDiskStatus(self.environment,
-                                   self.hosts,
+                                   self.hosts_list,
                                    self.user,
                                    self.name,
                                    private_key=self.ssh_private_key_filename,
