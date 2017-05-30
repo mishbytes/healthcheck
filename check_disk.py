@@ -66,7 +66,7 @@ def diskStatus(mount,default_timeout=30):
     return output
 
 
-def getDiskStatus(environment,hosts_list,mountpath,private_key='',debug=False):
+def getDiskStatus(environment,hosts_list,username,mountpath,private_key='',debug=False):
     log = logging.getLogger('getDiskStatus()')
     normalized_output={}
     normalized_output["value"]={}
@@ -86,7 +86,8 @@ def getDiskStatus(environment,hosts_list,mountpath,private_key='',debug=False):
         #with hide('everything'):
         with settings(
                         hide('everything'),
-                        key_filename=private_key
+                        key_filename=private_key,
+                        user = username
                       ):
             log.debug(">> BEGIN: Environment: %s Disk: %s check" %(environment,mountpath))
             disk_output = tasks.execute(diskStatus,mountpath)

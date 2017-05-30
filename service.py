@@ -61,6 +61,7 @@ class Service(object):
             self.last_checked=str(datetime.now())
             response=getDiskStatus(self.environment,
                                    self.hosts,
+                                   self.user,
                                    self.name,
                                    private_key=self.ssh_private_key_filename,
                                    debug=self.debug_boolean)
