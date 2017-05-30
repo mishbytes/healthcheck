@@ -215,7 +215,7 @@ class HealthCheckConfigStore(object):
                     log.debug("validating configuration %s" % (configfile))
                     with open(configfile) as f:
                         config = json.load(f)
-                    log.info(json.dumps(config,indent=4))
+                    log.debug(json.dumps(config,indent=4))
                     #check golden keys
                     CONFIG_OPTIONS=[]
                     for golden_key in CONFIG_GOLDEN_OPTIONS:
