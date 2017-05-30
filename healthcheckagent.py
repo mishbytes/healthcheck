@@ -8,8 +8,8 @@ from datetime import datetime
 #project
 from utils.pidfile import PidFile
 from utils.daemon import Daemon
-from configv2 import healthcheckLogging
-from configv2 import createLogfile
+from config import healthcheckLogging
+from config import createLogfile
 from healthcheckreporter import HealthcheckReporter
 
 os.umask(022)
@@ -23,12 +23,12 @@ DEFAULT_WAIT_TIME_BEFORE_KILL=1*60
 START_COMMANDS = ['start', 'restart']
 
 
-#PATHs
-CONFIG_FILENAME='configv2.json'
-CURRENT_WORKING_DIR=os.path.dirname(os.path.abspath(__file__))
+#PATH
+DEFAULT_CONFIG_FILE='config.json'
+AGENT_DIR=os.path.dirname(os.path.abspath(__file__))
 PID_NAME = __file__
-PID_DIR = CURRENT_WORKING_DIR
-AGENT_LOG=CURRENT_WORKING_DIR + '/' + DEFAUTL_LOG_FILENAME
+PID_DIR = AGENT_DIR
+AGENT_LOG=AGENT_DIR + '/' + DEFAUTL_LOG_FILENAME
 
 
 #global
@@ -52,7 +52,7 @@ class HealthcheckAgent(Daemon):
         self.healthcheckreporter = None
         self.check_interval = DEFAULT_CHECK_INTERVAL
         self.check_frequency = DEFAULT_CHECK_FREQUENCY
-        self.config_file=''
+        self.configfile=AGENT_DIR + '/' + DEFAULT_CONFIG_FILE
         #self.host=get_hostname()
 
     def _handle_sigterm(self, signum, frame):
@@ -96,7 +96,7 @@ class HealthcheckAgent(Daemon):
         signal.signal(signal.SIGINT, self._handle_sigterm)
 
         if config:
-            self.healthcheckreporter=HealthcheckReporter(CURRENT_WORKING_DIR + '/' + config,cwd=CURRENT_WORKING_DIR)
+            self.healthcheckreporter=HealthcheckReporter(self.configfile)
             self.check_interval=self.healthcheckreporter.getInterval()
             self.check_frequency=self.healthcheckreporter.getFrequency()
 
@@ -179,7 +179,7 @@ def main(argv):
         return 3
 
     if command in COMMANDS_AGENT:
-        createLogfile(CURRENT_WORKING_DIR + '/' + CONFIG_FILENAME)
+        createLogfile(AGENT_DIR + '/' + DEFAULT_CONFIG_FILE)
         hcagent = HealthcheckAgent(PidFile(PID_NAME, PID_DIR).get_path())
 
     if command in START_COMMANDS:
@@ -208,16 +208,16 @@ def main(argv):
         return "Health Check Version: 1.0"
 
     elif 'configcheck' == command or 'configtest' == command:
-        config_file_abs_path=CURRENT_WORKING_DIR + '/configv2.json'
-        healthcheckreporter=HealthcheckReporter(config_file_abs_path,configcheck=True)
+        healthcheckreporter=HealthcheckReporter(AGENT_DIR + '/' + DEFAULT_CONFIG_FILE,configcheck=True)
         if healthcheckreporter.valid():
             log.info("Configuration file %s is valid" % config_file_abs_path)
         else:
             log.info("Configuration file %s is invalid" % config_file_abs_path)
 
     elif 'emailcheck' == command:
-        config_file_abs_path=PROJECT_DIR + '/config.json'
-        #healthcheck=Healthcheck(config_file_abs_path)
+        pass
+        #config_file_abs_path=PROJECT_DIR + '/config.json'
+        #healthcheck=HealthcheckReporter(AGENT_DIR + '/' + DEFAULT_CONFIG_FILE)
         #healthcheck.testEmail()
 
     return 0

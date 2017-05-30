@@ -30,9 +30,9 @@ healthcheckLogging(default_level=DEFAUTL_LOGGING_LEVEL)
 #global
 log = logging.getLogger(__name__)
 
-class HealthCheckConfig(object):
+class HealthCheckConfigStore(object):
 
-    def __init__(self,configfile,cwd,configcheck=False):
+    def __init__(self,configfile,configcheck=False):
         self.configfile=configfile
         self.services=[]
         self.checkonly=configcheck
@@ -55,7 +55,6 @@ class HealthCheckConfig(object):
         self.jinja2_template='status.html.template'
         self.logging_level=DEFAUTL_LOGGING_LEVEL
         self.ssh_id_rsa_filename='~/.ssh/id_rsa'
-        self.cwd=cwd
         self.read()
 
 

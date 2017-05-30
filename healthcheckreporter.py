@@ -26,24 +26,19 @@ from email.mime.text import MIMEText
 
 #project
 from service import Service
-from configv2 import HealthCheckConfig
+from config import HealthCheckConfigStore
 from utils.hosts import get_hostname
 from output import generateStatusHtmlPage
 
-DEFAULT_CONFIG_FILE='configv2.json'
 
 log = logging.getLogger('HealthCheckReporter')
 
 class HealthcheckReporter(threading.Thread):
 
-        def __init__(self,configfile,cwd='/tmp',configcheck=False):
+        def __init__(self,configfile,configcheck=False):
             threading.Thread.__init__(self)
             self.finished = threading.Event()
             self.host=get_hostname()
-
-            #CWD is current working directory for reporter where it can find jinja2 template file
-            self.cwd=cwd
-
             self.last_service=None
             self.running=False
             self.start_event=True
@@ -53,7 +48,11 @@ class HealthcheckReporter(threading.Thread):
             self.last_checked = ''
             self.status_output=[]
             #Initialize Health check from configuration file config.json
-            self.config=HealthCheckConfig(configfile,cwd,configcheck=configcheck)
+            self.configfile=configfile
+            self.config=HealthCheckConfigStore(self.configfile,configcheck=configcheck)
+
+            #self.template_path should point to directort where jinja2 template file is
+            self.template_path=os.path.dirname(os.path.abspath(__file__))
             self.allservices=[]
             self.servicealerts={}
             #As this class is a thread, disable sys stdout and stderr
@@ -217,7 +216,7 @@ class HealthcheckReporter(threading.Thread):
             #service_alert_id=hashlib.md5(host + service['service']).hexdigest()
             if alert_added:
 
-                badservice_html=generateStatusHtmlPage(path=self.cwd,
+                badservice_html=generateStatusHtmlPage(path=self.template_path,
                                                        host=self.host,
                                                        time=self.getLastChecked(),
                                                        total_services=self.getAllServicesCount(),
