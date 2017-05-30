@@ -115,7 +115,6 @@ class HealthcheckAgent(Daemon):
                             else:
                                 break
 
-
                     if self.healthcheckreporter:
                         try:
 

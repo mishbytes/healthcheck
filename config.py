@@ -226,10 +226,10 @@ class HealthCheckConfigStore(object):
 
 
                     if not VALID_CONFIG_FILE:
-                        log.info("Configuration check Failed")
+                        log.debug("Configuration check Failed")
                         return False
                     else:
-                        log.info("Config Golden keys present")
+                        log.debug("Config Golden keys passed")
 
                     for service_item in config["services"]:
                         for service_golden_key in CONFIG_SERVICES_GOLDEN_OPTIONS:
@@ -238,10 +238,10 @@ class HealthCheckConfigStore(object):
                                 VALID_CONFIG_FILE=False
 
                     if not VALID_CONFIG_FILE:
-                        log.info("Configuration check Failed")
+                        log.debug("Configuration check Failed")
                         return False
                     else:
-                        log.info("Config Golden Service keys present")
+                        log.debug("Config Golden Service keys present")
                     config={}
                     log.info("Configuration check Passed")
                     return True
