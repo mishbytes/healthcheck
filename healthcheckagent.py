@@ -179,7 +179,11 @@ def main(argv):
         return 3
 
     if command in COMMANDS_AGENT:
-        createLogfile(AGENT_DIR + '/' + DEFAULT_CONFIG_FILE)
+        #following line added for py 2.6
+        LOG_FILENAME=AGENT_DIR + '/' + DEFAULT_CONFIG_FILE
+        #Ensure agent can write to Log
+        createLogfile(LOG_FILENAME)
+        #Initialize Agent
         hcagent = HealthcheckAgent(PidFile(PID_NAME, PID_DIR).get_path())
 
     if command in START_COMMANDS:
