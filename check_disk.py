@@ -10,10 +10,6 @@ from fabric.exceptions import CommandTimeout,NetworkError
 
 log = logging.getLogger(__name__)
 
-def disableLogging():
-    logging.getLogger("paramiko").setLevel(logging.WARNING)
-
-disableLogging()
 #CONSTANTS
 
 #Fabric setup
@@ -70,12 +66,18 @@ def diskStatus(mount,default_timeout=30):
     return output
 
 
-def getDiskStatus(environment,hosts_list,mountpath,private_key=''):
+def getDiskStatus(environment,hosts_list,mountpath,private_key='',debug=False):
     log = logging.getLogger('getDiskStatus()')
     normalized_output={}
     normalized_output["value"]={}
     normalized_output["message"]={}
     normalized_output["return_code"]={}
+
+    log.debug("Is Fabric debug enabled in configuration? %s" % debug)
+    if not debug:
+        logging.getLogger("paramiko").setLevel(logging.WARNING)
+    else:
+        log.debug("Debug enabled")
 
     if hosts_list:
         env.hosts = hosts_list

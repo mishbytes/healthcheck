@@ -8,7 +8,7 @@ import socket
 
 log = logging.getLogger(__name__)
 
-def sasLogon(environment,protocol,host,port,application,user,password):
+def sasLogon(environment,protocol,host,port,application,user,password,debug=False):
 
     log = logging.getLogger('check_sas.sasLogon()')
     log.debug("SAS Logon for WebApp: %s://%s:%s/%s initiated" % (protocol,host,port,application))
@@ -39,6 +39,7 @@ def sasLogon(environment,protocol,host,port,application,user,password):
               lastSlash = location.rfind('/') + 1
               tgt = location[lastSlash:len(location)]
               service_url = "%s://%s:%s/%s/j_spring_cas_security_check" % (protocol,host,port,application)
+              log.debug("Service URL: %s" % service_url)
               params = urllib.urlencode({'service': service_url})
               conn.request("POST", "%s%s" % (cas_endpoint, tgt) , params, headers=headers)
               response = conn.getresponse()

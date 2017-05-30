@@ -154,32 +154,46 @@ class HealthCheckConfig(object):
                     elif 'SERVICES' == env_key.upper():
                         for service in config[config_key][env_key]:
                             if  'YES' == service["enabled"].upper():
+
                                 for service_key in service:
+
+                                    #convert key names to upper case
+                                    service_key_upper_case=[]
+                                    for k in service:
+                                        service_key_upper_case.append(k.upper())
+                                    log.debug("Service keys upper case %s" % service_key_upper_case)
+
                                     if 'APPS' == service_key.upper():
                                         for name in service[service_key]:
-                                            if "SSH_PRIVATE_KEY_FILENAME" in service:
-                                                self.services.append(Service(self.env_name,
-                                                                         self.env_level,
-                                                                         name,
-                                                                         service['type'],
-                                                                         service['hosts'],
-                                                                         service['port'],
-                                                                         service['protocol'],
-                                                                         service['user'],
-                                                                         service['password'],
-                                                                         ssh_private_key_filename=service['ssh_private_key_filename']
-                                                                         ))
+                                            if "SSH_PRIVATE_KEY_FILENAME" in service_key_upper_case:
+                                                keyfilename=service['ssh_private_key_filename']
+                                                log.debug("Private key file for ssh connection is %s " % keyfilename)
                                             else:
-                                                self.services.append(Service(self.env_name,
-                                                                         self.env_level,
-                                                                         name,
-                                                                         service['type'],
-                                                                         service['hosts'],
-                                                                         service['port'],
-                                                                         service['protocol'],
-                                                                         service['user'],
-                                                                         service['password']
-                                                                         ))
+                                                keyfilename=''
+                                            log.debug("Check debug key in %s" % service)
+                                            if "DEBUG" in service_key_upper_case:
+                                                if "YES" == service['debug'].upper():
+                                                    debug_boolean=True
+                                                    log.debug("Debug set to Yes for application %s " % name)
+                                                else:
+                                                    log.debug("Debug not set to YES for service %s" % name)
+                                                    debug_boolean=False
+                                            else:
+                                                log.debug("Debug option is missing %s" % name)
+                                                debug_boolean=False
+
+                                            self.services.append(Service(self.env_name,
+                                                                     self.env_level,
+                                                                     name,
+                                                                     service['type'],
+                                                                     service['hosts'],
+                                                                     service['port'],
+                                                                     service['protocol'],
+                                                                     service['user'],
+                                                                     service['password'],
+                                                                     debug=debug_boolean,
+                                                                     ssh_private_key_filename=keyfilename
+                                                                     ))
                                             log.debug("Added Service %s to check" % service)
                             else:
                                 log.debug("Removed Service %s from check" % service)

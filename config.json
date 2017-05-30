@@ -41,7 +41,7 @@
                               "apps":["/opt","/tmp"],
                               "user":"demo",
                               "password":"password",
-                              "debug":"No"
+                              "debug":"yes"
                           }
                      ]
     }

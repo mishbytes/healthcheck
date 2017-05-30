@@ -10,7 +10,7 @@ from check_disk import getDiskStatus
 log = logging.getLogger('Service')
 
 class Service(object):
-    def __init__(self,environment,level,name,type,hosts,port,protocol,user,password,ssh_private_key_filename='~/.ssh/id_rsa'):
+    def __init__(self,environment,level,name,type,hosts,port,protocol,user,password,debug=False,ssh_private_key_filename='~/.ssh/id_rsa'):
         self.type=type
         self.environment=environment
         self.level=environment
@@ -21,6 +21,7 @@ class Service(object):
         self.protocol=protocol
         self.user=user
         self.password=password
+        self.debug_boolean=debug
         self.ssh_private_key_filename=ssh_private_key_filename
 
         #Status keys
@@ -37,6 +38,7 @@ class Service(object):
 
     def status(self):
         log = logging.getLogger('Service.status()')
+        log.debug("Is debug enabled for service %s? %s" % (self.name,self.debug_boolean))
         if self.type.upper() == 'WEBAPP':
             #response={"value":True|False,"return_code":return_code,"message":message}
             #log.debug("Checking WebApp: %s://%s:%s/%s" % (self.protocol,self.hosts,self.port,self.name))
@@ -47,7 +49,8 @@ class Service(object):
                               self.port,
                               self.name,
                               self.user,
-                              self.password)
+                              self.password,
+                              debug=self.debug_boolean)
             self.checked=True
             self.return_code=response["return_code"]
             self.available=response["value"]
@@ -59,7 +62,8 @@ class Service(object):
             response=getDiskStatus(self.environment,
                                    self.hosts,
                                    self.name,
-                                   private_key=self.ssh_private_key_filename)
+                                   private_key=self.ssh_private_key_filename,
+                                   debug=self.debug_boolean)
             self.checked=True
             self.return_code=response["return_code"]
             self.available=response["value"]
