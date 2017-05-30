@@ -268,6 +268,7 @@ class HealthcheckReporter(threading.Thread):
                     # sendmail function takes 3 arguments: sender's address, recipient's address
                     # and message to send - here it is sent as one string.
                     conn.sendmail(self.config.smtp_sender, self.config.smtp_receiver, msg.as_string())
+                    log.debug("Alert email sent at %s " % str(datetime.now()))
                     conn.quit()
                 except (socket.error,socket.gaierror,smtplib.SMTPException) as e:
                     log.error("Failed to send email: %s" % str(e))

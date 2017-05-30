@@ -135,12 +135,12 @@ class HealthcheckAgent(Daemon):
                             log.info("HealthCheck finished at %s" % str(datetime.now()))
                             log.info("HealthCheck took %s seconds to complete" % total_time)
 
-                            log.info("Send alert started at %s" % str(datetime.now()))
+                            log.info("Alert Check started at %s" % str(datetime.now()))
                             start_time=time.time()
                             self.healthcheckreporter.alert()
                             total_time=time.time()-start_time
-                            log.info("Send alert finished at %s" % str(datetime.now()))
-                            log.info("Send alert took %s seconds to complete" % total_time)
+                            log.info("Alert Check finished at %s" % str(datetime.now()))
+                            log.info("Alert Check took %s seconds to complete" % total_time)
 
                             self.healthcheckreporter.running=False
                         finally:

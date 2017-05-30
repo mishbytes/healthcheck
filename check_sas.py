@@ -55,7 +55,7 @@ def sasLogon(environment,protocol,host,port,application,user,password,debug=Fals
                   opener = urllib2.build_opener(no_proxy_support, cookie_handler, urllib2.HTTPHandler(debuglevel=1))
                   urllib2.install_opener(opener)
 
-                  log.info("Logging on to %s " % (application))
+                  log.debug("Logging on to %s " % (application))
                   response = urllib2.urlopen(url)
 
                   return_code=response.getcode()
