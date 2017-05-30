@@ -18,7 +18,8 @@ os.umask(022)
 DEFAULT_CONFIG_FILE='config.json'
 DEFAUTL_LOGGING_LEVEL=logging.INFO
 DEFAUTL_LOG_FILENAME='healthcheck.log'
-DEFAULT_WAIT_TIME_BEFORE_KILL=1*60
+DEFAULT_WAIT_BETWEEN_TASKS=30 #seconds
+DEFAULT_WAIT_TIME_BEFORE_KILL=1*60 #1 minute
 
 START_COMMANDS = ['start', 'restart']
 
@@ -109,8 +110,8 @@ class HealthcheckAgent(Daemon):
                         t_end=time.time() + self.check_interval
                         while time.time() < t_end:
                             if self.run_forever:
-                                log.debug("waiting to run next event %s" % self.healthcheckreporter.start_event)
-                                time.sleep(DEFAULT_KILL_TIMEOUT)
+                                log.debug("waiting to run next event %s sleep %s" % (self.healthcheckreporter.start_event,DEFAULT_WAIT_BETWEEN_TASKS))
+                                time.sleep(DEFAULT_WAIT_BETWEEN_TASKS)
                             else:
                                 break
 
