@@ -92,7 +92,7 @@ class HealthCheckConfigStore(object):
                 #Set top level properties
                 for config_key in config:
                     if config_key in CONFIG_ALL_OPTIONS:
-                        log.debug("Found property %s" % config_key)
+                        log.debug("Found key:pair %s:%s" % (config_key.upper(),config[config_key]))
                         if 'ENV_NAME' == config_key.upper():
                             self.env_name= config[config_key]
                         elif 'LOG' == config_key.upper():
@@ -126,10 +126,12 @@ class HealthCheckConfigStore(object):
                             if 'YES' == config_key.upper():
                                 self.enabled=True
                         elif 'EMAIL_ENABLED' == config_key.upper():
-                            if 'YES' == config_key.upper():
+                            if 'YES' == config[config_key].upper():
+                                log.debug("email feature enabled")
                                 self.email_enabled=True
                         elif 'EMAIL_SUBJECT' == config_key.upper():
                             self.email_subject=config[config_key]
+
 
                 #Find and add services
                 for service in config["services"]:
@@ -264,10 +266,15 @@ def createLogfile(configfile):
                     sys.exit(2)
             else:
                 if not os.path.isdir(logfile):
-                    sys.stdout.write('Log file %s \n' % logfile)
-                    with open(logfile, 'a') as f:
-                        os.utime(f, None)
-                        f.close()
+                    if os.path.isdir(os.path.dirname(os.path.abspath(logfile))):
+                        sys.stdout.write('Log file %s \n' % logfile)
+                        #touch file
+                        with open(logfile, 'a'):
+                            os.utime(logfile, None)
+                    else:
+                        sys.stdout.write('Log directory %s do not exist\n' % logfile)
+
+
                 else:
                     sys.stdout.write('Invalid log %s\n' % logfile)
                     sys.exit(2)

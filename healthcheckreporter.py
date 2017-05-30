@@ -147,12 +147,12 @@ class HealthcheckReporter(threading.Thread):
                         if isinstance(service.available, bool):
                             #single host service availablility
                             log.debug("Service %s" % service.available)
-                            availablility=service.available
+                            available=service.available
                             message=service.message
                         elif isinstance(service.available, dict):
                             #multiple host service availablility
                             log.debug("Service %s" % service.available[host])
-                            availablility=service.available[host]
+                            available=service.available[host]
                             message=service.message[host]
                         else:
                             log.debug("Unknown available data type")
@@ -160,16 +160,20 @@ class HealthcheckReporter(threading.Thread):
                         if not host in output:
                             output[host]=[]
 
-                        output[host].append(
-                                            {
-                                                "service":service.name,
-                                                "type":service.type,
-                                                "status":availablility,
-                                                "last_checked":service.last_checked,
-                                                "additional_info":message,
-                                                "service_id":service_id
-                                            }
-                                            )
+                        if not available:
+                            output[host].append(
+                                                {
+                                                    "service":service.name,
+                                                    "type":service.type,
+                                                    "status":available,
+                                                    "last_checked":service.last_checked,
+                                                    "additional_info":message,
+                                                    "service_id":service_id
+                                                }
+                                                )
+                            log.debug("Service %s on host %s added to unavailable list" % (service.name,host))
+                        else:
+                            log.debug("Service %s on host %s is available" % (service.name,host))
 
 
             log.debug("Bad Services")

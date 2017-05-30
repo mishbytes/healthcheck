@@ -15,7 +15,7 @@ from healthcheckreporter import HealthcheckReporter
 os.umask(022)
 
 #CONSTANTS
-DEFAULT_CONFIG_FILE='configv2.json'
+DEFAULT_CONFIG_FILE='config.json'
 DEFAUTL_LOGGING_LEVEL=logging.INFO
 DEFAUTL_LOG_FILENAME='healthcheck.log'
 DEFAULT_WAIT_TIME_BEFORE_KILL=1*60
