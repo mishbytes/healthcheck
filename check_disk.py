@@ -22,7 +22,7 @@ env.user = 'sas'
 # or, specify path to server private key here:
 #env.key_filename = '/my/ssh_keys/id_rsa'
 
-env.key_filename='/vagrant/va73_dist/ssh_keys/id_rsa'
+env.key_filename='~/.ssh/id_rsa'
 
 #When True, Fabric will run in a non-interactive mode
 #This allows users to ensure a Fabric session will always terminate cleanly
@@ -70,7 +70,7 @@ def diskStatus(mount,default_timeout=30):
     return output
 
 
-def getDiskStatus(environment,hosts_list,mountpath):
+def getDiskStatus(environment,hosts_list,mountpath,private_key=''):
     log = logging.getLogger('getDiskStatus()')
     normalized_output={}
     normalized_output["value"]={}
@@ -81,7 +81,11 @@ def getDiskStatus(environment,hosts_list,mountpath):
         env.hosts = hosts_list
         env.parallel=True
         env.eagerly_disconnect=True
-        with hide('everything'):
+        #with hide('everything'):
+        with settings(
+                        hide('everything'),
+                        key_filename=private_key
+                      ):
             log.debug(">> BEGIN: Environment: %s Disk: %s check" %(environment,mountpath))
             disk_output = tasks.execute(diskStatus,mountpath)
             log.debug(">> END: Environment: %s Disk: %s check" %(environment,mountpath))

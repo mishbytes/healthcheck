@@ -54,6 +54,7 @@ class HealthCheckConfig(object):
         self.alert_lifetime=2*60*60 # 2 hours
         self.status_jinja2_html_template='status.html.template'
         self.logging_level=DEFAUTL_LOGGING_LEVEL
+        self.ssh_private_key_filename='~/.ssh/id_rsa'
         self.getConfig()
 
 
@@ -81,7 +82,7 @@ class HealthCheckConfig(object):
 
         if self.valid:
             if not self.checkonly:
-                self.getServicesFromConfig(config_data)
+                self.getServices(config_data)
                 healthcheckLogging(default_level=self.logging_level,filename=self.logfile)
             else:
                 log.info("Configuration check only, skipped loading")
@@ -101,8 +102,8 @@ class HealthCheckConfig(object):
 
 
 
-    def getServicesFromConfig(self,config):
-        log = logging.getLogger('HealthCheckConfig.getServicesFromConfig()')
+    def getServices(self,config):
+        log = logging.getLogger('HealthCheckConfig.getServices()')
         log.debug("** Fetching Applications **")
         CONFIG_OPTIONS=['name','smtp','log','output','env','comment','run_interval_seconds','run_counter','verbose']
         CONFIG_SMTP_OPTIONS=['host','port','user','password']
@@ -156,16 +157,29 @@ class HealthCheckConfig(object):
                                 for service_key in service:
                                     if 'APPS' == service_key.upper():
                                         for name in service[service_key]:
-                                            self.services.append(Service(self.env_name,
-                                                                     self.env_level,
-                                                                     name,
-                                                                     service['type'],
-                                                                     service['hosts'],
-                                                                     service['port'],
-                                                                     service['protocol'],
-                                                                     service['user'],
-                                                                     service['password']
-                                                                     ))
+                                            if "SSH_PRIVATE_KEY_FILENAME" in service:
+                                                self.services.append(Service(self.env_name,
+                                                                         self.env_level,
+                                                                         name,
+                                                                         service['type'],
+                                                                         service['hosts'],
+                                                                         service['port'],
+                                                                         service['protocol'],
+                                                                         service['user'],
+                                                                         service['password'],
+                                                                         ssh_private_key_filename=service['ssh_private_key_filename']
+                                                                         ))
+                                            else:
+                                                self.services.append(Service(self.env_name,
+                                                                         self.env_level,
+                                                                         name,
+                                                                         service['type'],
+                                                                         service['hosts'],
+                                                                         service['port'],
+                                                                         service['protocol'],
+                                                                         service['user'],
+                                                                         service['password']
+                                                                         ))
                                             log.debug("Added Service %s to check" % service)
                             else:
                                 log.debug("Removed Service %s from check" % service)
