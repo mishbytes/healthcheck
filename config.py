@@ -8,7 +8,7 @@ import sys
 from service import Service
 
 #constants
-DEFAUTL_LOGGING_LEVEL=logging.DEBUG
+DEFAUTL_LOGGING_LEVEL=logging.INFO
 
 def healthcheckLogging(default_level=logging.INFO,filename=None):
     # Remove all handlers associated with the root logger object.
@@ -267,7 +267,7 @@ def createLogfile(configfile):
             else:
                 if not os.path.isdir(logfile):
                     if os.path.isdir(os.path.dirname(os.path.abspath(logfile))):
-                        sys.stdout.write('Log file %s \n' % logfile)
+                        sys.stdout.write('Writing to log file %s \n' % logfile)
                         #touch file
                         with open(logfile, 'a'):
                             os.utime(logfile, None)

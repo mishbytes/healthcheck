@@ -191,7 +191,6 @@ def main(argv):
         pass
 
     if 'start' == command:
-        log.info("Starting Agent")
         hcagent.start()
         #agent.start()
 
