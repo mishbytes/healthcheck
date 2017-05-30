@@ -1,5 +1,6 @@
 import os
 import logging
+import json
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -15,13 +16,14 @@ def generateStatusHtmlPage(path='/tmp',host='',time='',total_services=0,total_se
     log = logging.getLogger('output.generateStatusHtmlPage()')
     fname = path + '/' + "status.html"
 
+    html=None
     context = {
         'service_status_dicts': services_status,
         'total_services':total_services,
         'total_services_unavailable':total_services_unavailable,
         'report_title':'Health Check Report Executed from %s at %s' % (host,time)
     }
-    log.debug("jinja2 context %s" % context)
+    log.debug("jinja2 context %s" % json.dumps(context,indent=4))
     #
     #with open(fname, 'w') as f:
         #html = render_template(context,template_dir=path,template_filename='status.html.template')
@@ -29,7 +31,11 @@ def generateStatusHtmlPage(path='/tmp',host='',time='',total_services=0,total_se
         #log.debug(html)
         #log.debug("Written bad service report to %s" % fname)
         #f.write(html)
-    html = render_template(context,template_dir=path,template_filename='status.html.template')
+    try:
+        html = render_template(context,template_dir=path,template_filename='status.html.template')
+    except Exception as e:
+        log.error("Error occurred while generating HTML")
+        log.exception(e)
     return html
 
 

@@ -120,13 +120,15 @@
             </h2>
           </td>
     </tr>
+{% set vars = {'first_row': True} %}
 {% for dict_item in service_status_dicts %}
   {% set each_host_services_count = service_status_dicts[dict_item]|length %}
-  {% set first_host = 1 %}
+  {% set first_row = 1 %}
   {% for dict_item2 in service_status_dicts[dict_item] %}
         <tr>
-          {% if first_host == 1 %}
+          {% if vars.first_row %}
             <td rowspan="{{ each_host_services_count }}">{{ dict_item }}</td>
+            {% if vars.update({'first_row': False}) %} {% endif %}
           {% endif %}
           <td>{{ dict_item2['service'] }}</td>
           <td>{{ dict_item2['type'] }}</td>
@@ -138,7 +140,7 @@
           <td>{{ dict_item2['last_checked'] }}</td>
           <td>{{ dict_item2['additional_info'] }}</td>
         </tr>
-        {% set first_host = -1 %}
+        
   {% endfor %}
 {% endfor %}
 </table>
