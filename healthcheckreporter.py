@@ -137,6 +137,7 @@ class HealthcheckReporter(threading.Thread):
             output={}
             if self.allservices:
                 for service in self.allservices:
+                        log.debug("Service name %s available property: %s" % (service.name,service.available))
                         if isinstance(service.hosts, list):
                             for host in service.hosts:
                                 if not service.available[host]:

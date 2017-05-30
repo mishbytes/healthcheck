@@ -37,11 +37,11 @@
                               "protocol":"ssh",
                               "hosts":["192.168.56.201","192.168.56.202","192.168.56.203"],
                               "port":22,
-                              "ssh_private_key_filename":"~/.ssh/id_rsa",
-                              "apps":["/opt","/tmp"],
-                              "user":"demo",
+                              "ssh_private_key_filename":"/vagrant/va73_dist/ssh_keys/id_rsa",
+                              "apps":["/opt2","/tmp"],
+                              "user":"sas",
                               "password":"password",
-                              "debug":"yes"
+                              "debug":"no"
                           }
                      ]
     }

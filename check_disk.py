@@ -47,7 +47,12 @@ def diskStatus(mount,default_timeout=30):
             log.debug(">>>>>>>>>> Finished \'%s\' on host %s  return code %d" % (command,env.host_string,result.return_code))
             return_code=result.return_code
             if return_code == 0:
+                #discard message
                 status=True
+            else:
+                #capture message as it may be an error message
+                message=result
+
         except CommandTimeout as connerr:
             message="Disk %s did not respond" % mount
             log.debug("Disk %s did not respond %s" % (mount,connerr))
@@ -56,8 +61,11 @@ def diskStatus(mount,default_timeout=30):
             log.debug("Unable to connect to %s" % (env.host_string))
             log.debug(neterr)
         except SystemExit as syserror:
-            log.debug("exit %s" % (syserror))
+            log.debug("Error-code while establising ssh connection is non-zero: %s" % str(syserror))
             #status=False
+        except IOError as ioerr:
+            message=str(ioerr)
+            log.exception("Command failed with error %s" % (ioerr))
         except Exception as err:
             message="Unknown Error occurred in diskStatus()"
             log.debug("Unknown Error occurred in diskStatus() %s" % (err))
