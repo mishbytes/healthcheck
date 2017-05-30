@@ -49,7 +49,7 @@ class HealthCheckConfig(object):
         self.run_interval_seconds=0
         self.run_counter=0
         self.valid=False
-        self.sendemail=True
+        self.sendemail=False
         self.email_subject='Email from HealthCheck'
         self.alert_lifetime=2*60*60 # 2 hours
         self.status_jinja2_html_template='status.html.template'
@@ -143,6 +143,8 @@ class HealthCheckConfig(object):
             elif 'SENDEMAIL' == config_key.upper():
                 if 'YES' == config_key.upper():
                     self.sendemail=True
+            elif 'EMAIL_SUBJECT' == config_key.upper():
+                self.email_subject=config[config_key]
             elif 'ENV' == config_key.upper():
                 for env_key in config[config_key]:
                     if 'NAME' == env_key.upper():

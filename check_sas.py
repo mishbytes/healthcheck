@@ -86,6 +86,8 @@ def sasLogon(environment,protocol,host,port,application,user,password,debug=Fals
               tgt = ""
               conn.close()
 
+    except httplib.BadStatusLine as e:
+        log.exception("Bad Status Line %s" % e)
     except httplib.HTTPException as e:
         log.debug(e)
         return_code = e.errno
