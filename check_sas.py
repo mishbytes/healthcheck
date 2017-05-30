@@ -87,7 +87,7 @@ def sasLogon(environment,protocol,host,port,application,user,password,debug=Fals
               conn.close()
 
     except httplib.BadStatusLine as e:
-        log.exception("Bad Status Line %s" % e)
+        log.debug("Bad Status Line %s" % e)
     except httplib.HTTPException as e:
         log.debug(e)
         return_code = e.errno
@@ -101,7 +101,7 @@ def sasLogon(environment,protocol,host,port,application,user,password,debug=Fals
             message="Connection Refused"
         else:
             message=str(socketmsg)
-            log.exception(socketmsg)
+            log.debug(socketmsg)
             #message="Socket error %d" % socketmsg.errno
         log.debug(socketmsg)
     except socket.gaierror as socketgamsg:
