@@ -121,8 +121,15 @@ class HealthcheckReporter(threading.Thread):
             countbadservices=0
             if self.allservices:
                 for service in self.allservices:
-                    if not service.available:
-                        countbadservices+=1
+                    for host in service.hosts:
+                        if isinstance(service.available, bool):
+                            available=service.available
+                        elif isinstance(service.available, dict):
+                            available=service.available[host]
+                        else:
+                            log.debug("Unknown available data type")
+                        if not available:
+                            countbadservices+=1
             return countbadservices
 
         def getHostsfriendlyname(self):
@@ -190,6 +197,7 @@ class HealthcheckReporter(threading.Thread):
             badservices=self.getOfflineServices()
             hosts_fn=self.getHostsfriendlyname()
             alertservices={}
+            alerts_count_for_email=0
             alert_added=False
             alert_lifetime=self.config.alert_lifetime
             for host,services in badservices.iteritems():
@@ -202,6 +210,7 @@ class HealthcheckReporter(threading.Thread):
                         if age_of_last_alert > alert_lifetime:
                             log.debug("Age of Alert for service %s exceeded alert life time %s" % (service,alert_lifetime))
                             log.debug("Add service to alert list %s" % service)
+                            alerts_count_for_email+=1
                             self.servicealerts[id]=time.time()
                             alert_added=True
                             alertservices[host].append(service)
@@ -209,6 +218,7 @@ class HealthcheckReporter(threading.Thread):
                             log.debug("Last Alert for service %s not expired " % service)
                     else:
                         log.debug("This first alert for service %s since agent start" % service)
+                        alerts_count_for_email+=1
                         self.servicealerts[id]=time.time()
                         alert_added=True
                         alertservices[host].append(service)
@@ -220,11 +230,13 @@ class HealthcheckReporter(threading.Thread):
             #service_alert_id=hashlib.md5(host + service['service']).hexdigest()
             if alert_added:
 
+                log.info("Number of Alert found %d " % alerts_count_for_email)
                 badservice_html=generateStatusHtmlPage(path=self.template_path,
                                                        host=self.host,
                                                        time=self.getLastChecked(),
                                                        total_services=self.getAllServicesCount(),
                                                        total_services_unavailable=self.getBadServicesCount(),
+                                                       alerts_count_for_email=alerts_count_for_email,
                                                        hosts_friendlyname=hosts_fn,
                                                        services_status=alertservices
                                                        )
@@ -232,7 +244,7 @@ class HealthcheckReporter(threading.Thread):
                 log.debug(badservice_html)
                 self.sendemail(badservice_html)
             else:
-                log.debug("No alerts found for alerting")
+                log.info("No alerts found for alerting")
 
         def sendemail(self,content):
             log = logging.getLogger('Healthcheck.sendemail()')
@@ -268,11 +280,11 @@ class HealthcheckReporter(threading.Thread):
                     # sendmail function takes 3 arguments: sender's address, recipient's address
                     # and message to send - here it is sent as one string.
                     conn.sendmail(self.config.smtp_sender, self.config.smtp_receiver, msg.as_string())
-                    log.debug("Alert email sent at %s " % str(datetime.now()))
+                    log.info("Alert email sent at %s " % str(datetime.now()))
                     conn.quit()
                 except (socket.error,socket.gaierror,smtplib.SMTPException) as e:
                     log.error("Failed to send email: %s" % str(e))
                     #log.exception(e)
             else:
                 log.debug("Email feature disabled in config file")
-                log.debug("set sendemail to yes in config file to send email")
+                log.debug("set email_enabled to yes in config file")
