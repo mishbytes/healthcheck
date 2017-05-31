@@ -220,10 +220,9 @@ class HealthCheckConfigStore(object):
                     CONFIG_OPTIONS=[]
                     for golden_key in CONFIG_GOLDEN_OPTIONS:
                         if not golden_key in config:
-                            log.info("Property %s is missing in config file" % golden_key)
+                            log.debug("Property %s is missing in config file" % golden_key)
                             VALID_CONFIG_FILE=False
                             #return False
-
 
                     if not VALID_CONFIG_FILE:
                         log.debug("Configuration check Failed")
@@ -234,7 +233,7 @@ class HealthCheckConfigStore(object):
                     for service_item in config["services"]:
                         for service_golden_key in CONFIG_SERVICES_GOLDEN_OPTIONS:
                             if not service_golden_key in service_item:
-                                log.info('key:value \"%s:value\" is missing for service %s' % (service_golden_key,service_item))
+                                log.debug('key:value \"%s:value\" is missing for service %s' % (service_golden_key,service_item))
                                 VALID_CONFIG_FILE=False
 
                     if not VALID_CONFIG_FILE:
