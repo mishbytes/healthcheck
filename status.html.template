@@ -51,7 +51,7 @@
 <table border="1" cellpadding="0" cellspacing="0" style="margin-left: auto; margin-right: auto; padding-left: 0px; padding-right: 0px; width: 100%;">
     <tr>
           <td>
-            <h2 style="width: 180px;
+            <h2 style="width: 200px;
                        font-size: 16px;
                        font-weight: 500;
                        color: #a94442;
@@ -63,8 +63,7 @@
             </h2>
           </td>
           <td>
-          <td>
-            <h2 style="width: 150px;
+            <h2 style="width: 180px;
                        font-size: 16px;
                        font-weight: 500;
                        color: #a94442;
@@ -115,7 +114,7 @@
             </h2>
           </td>
           <td>
-            <h2 style="width: 180px;
+            <h2 style="width: 250px;
                        font-size: 16px;
                        font-weight: 500;
                        color: #a94442;

@@ -108,14 +108,15 @@ class HealthcheckReporter(threading.Thread):
             log = logging.getLogger('Healthcheck.getLastChecked()')
             return self.last_checked
 
-        def getAllServicesCount(self):
+        def countServices(self):
             log = logging.getLogger('Healthcheck.getAllServicesCount()')
-            log.debug("Available services %s" % len(self.allservices))
+            countservices=0
             if self.allservices:
-                log.debug("Available services %s" % len(self.allservices))
-                return len(self.allservices)
-            else:
-                return 0
+                for service in self.allservices:
+                    for host in service.hosts:
+                        countservices+=1
+            return countservices
+
         def getBadServicesCount(self):
             log = logging.getLogger('Healthcheck.getBadServicesCount()')
             countbadservices=0
@@ -145,6 +146,7 @@ class HealthcheckReporter(threading.Thread):
         def getOfflineServices(self):
             log = logging.getLogger('Healthcheck.getOfflineServices()')
             output={}
+            count=0
             if self.allservices:
                 for service in self.allservices:
                     for host in service.hosts:
@@ -178,23 +180,26 @@ class HealthcheckReporter(threading.Thread):
                                                     "service_id":service_id
                                                 }
                                                 )
+                            count+=1
                             log.debug("Service %s on host %s added to unavailable list" % (service.name,host))
                         else:
                             log.debug("Service %s on host %s is available" % (service.name,host))
 
 
-            log.debug("Bad Services")
+            log.debug("Offline Services")
             log.debug(json.dumps(output,indent=4))
-            return output
+            return output,count
 
                     #self.return_code=response["return_code"]
                     #self.available=response["value"]
                     #self.message=response["message"]
 
 
+
         def alert(self):
             log = logging.getLogger('Healthcheck.alert()')
-            badservices=self.getOfflineServices()
+            count_all_services=self.countServices()
+            badservices,count_badservices=self.getOfflineServices()
             hosts_fn=self.getHostsfriendlyname()
             alertservices={}
             alerts_count_for_email=0
@@ -234,8 +239,8 @@ class HealthcheckReporter(threading.Thread):
                 badservice_html=generateStatusHtmlPage(path=self.template_path,
                                                        host=self.host,
                                                        time=self.getLastChecked(),
-                                                       total_services=self.getAllServicesCount(),
-                                                       total_services_unavailable=self.getBadServicesCount(),
+                                                       total_services=count_all_services,
+                                                       total_services_unavailable=count_badservices,
                                                        alerts_count_for_email=alerts_count_for_email,
                                                        hosts_friendlyname=hosts_fn,
                                                        services_status=alertservices
