@@ -83,10 +83,10 @@ class HealthcheckReporter(threading.Thread):
             log.debug("Before adding service: services_status %s" % json.dumps(self.services_status,indent=4))
             log.debug("Adding service %s" % json.dumps(service_status,indent=4))
 
-            for host,service in service_status.items():
+            for host,service in service_status.iteritems():
 
                 log.debug("Check this host %s" % host)
-                for name,attributes in service.items():
+                for name,attributes in service.iteritems():
                     if host in self.services_status:
                         if name in self.services_status[host]:
                             log.debug("Updating existing service to services_status %s" % json.dumps(service_status,indent=4))
@@ -136,7 +136,7 @@ class HealthcheckReporter(threading.Thread):
             log = logging.getLogger('HealthcheckReporter.countServices()')
             counter=0
             if self.services_status:
-                for host,services in self.services_status.items():
+                for host,services in self.services_status.iteritems():
                     for service in services:
                         log.debug("Service found, increment counter %s" % json.dumps(service,indent=4))
                         counter+=1
@@ -149,9 +149,9 @@ class HealthcheckReporter(threading.Thread):
             offline={}
             counter=0
             if self.services_status:
-                for host,service in self.services_status.items():
+                for host,service in self.services_status.iteritems():
                     log.debug("Check availability for service %s" % json.dumps(service,indent=4) )
-                    for name,attributes in service.items():
+                    for name,attributes in service.iteritems():
                         log.debug("Availability is set to %s" % attributes['available'])
                         if 'available' in attributes:
                             if not attributes['available']:
@@ -180,7 +180,7 @@ class HealthcheckReporter(threading.Thread):
             alert_lifetime=self.config.alert_lifetime
             for host,services in offline_services.iteritems():
                 alertservices[host]={}
-                for service_name,service_attributes in services.items():
+                for service_name,service_attributes in services.iteritems():
                     if not service_name in alertservices[host]:
                         alertservices[host][service_name]={}
                     id=service_attributes['service_id']
@@ -230,7 +230,7 @@ class HealthcheckReporter(threading.Thread):
             log = logging.getLogger('Healthcheck.getHostsfriendlyname()')
             hosts_desc={}
             for service in self.config.services:
-                for host,desc in service.hosts.items():
+                for host,desc in service.hosts.iteritems():
                     hosts_desc[host]=desc
             log.debug("Host friendly names %s" % json.dumps(hosts_desc,indent=4))
             return hosts_desc
