@@ -141,25 +141,25 @@
           </td>
     </tr>
 {% set vars = {'first_row': True} %}
-{% for dict_item in service_status_dicts %}
-  {% set each_host_services_count = service_status_dicts[dict_item]|length %}
+{% for host, services in service_status_dicts.items() %}
+  {% set each_host_services_count = service_status_dicts[host]|length %}
   {% if vars.update({'first_row': True}) %} {% endif %}
-  {% for dict_item2 in service_status_dicts[dict_item] %}
+  {% for service_name,service_values in services.items() %}
         <tr>
           {% if vars.first_row %}
-            <td rowspan="{{ each_host_services_count }}">{{ hosts_friendlyname[dict_item]}} </td>
-            <td rowspan="{{ each_host_services_count }}"> {{ dict_item }} </td>
+            <td rowspan="{{ each_host_services_count }}">{{ hosts_friendlyname[host]}} </td>
+            <td rowspan="{{ each_host_services_count }}"> {{ host }} </td>
             {% if vars.update({'first_row': False}) %} {% endif %}
           {% endif %}
-          <td>{{ dict_item2['service'] }}</td>
-          <td>{{ dict_item2['type'] }}</td>
-          {% if dict_item2['status'] == 1 %}
+          <td>{{ service_name }}</td>
+          <td>{{ service_values['type'] }}</td>
+          {% if service_values['available'] %}
             <td>Available</td>
           {% else %}
             <td>Not Available</td>
           {% endif %}
-          <td>{{ dict_item2['last_checked'] }}</td>
-          <td>{{ dict_item2['additional_info'] }}</td>
+          <td>{{ service_values['last_checked'] }}</td>
+          <td>{{ service_values['message'] }}</td>
         </tr>
 
   {% endfor %}

@@ -5,6 +5,8 @@ import urllib
 import urllib2
 import cookielib
 import socket
+import hashlib
+from datetime import datetime
 
 log = logging.getLogger(__name__)
 
@@ -114,7 +116,16 @@ def sasLogon(environment,protocol,host,port,application,user,password,debug=Fals
         if conn:
             conn.close()
 
-    output={"available":AVAILABLE,"return_code":return_code,"message":message}
+    last_checked=str(datetime.now())
+    service_id=hashlib.md5(host + application).hexdigest()
+
+    output={"available":AVAILABLE,
+            "return_code":return_code,
+            "message":message,
+            "type":"webapp",
+            "service_id":service_id,
+            "last_checked":last_checked
+            }
     _status={host:{application:output}}
     log.debug("Status of %s: %s" % (application,_status))
     return _status

@@ -1,6 +1,8 @@
 #std imports
 import logging
 import socket
+import hashlib
+import datetime
 
 #Fabric for ssh connections
 from fabric import tasks
@@ -70,7 +72,15 @@ def diskStatus(mount,default_timeout=30):
             message="Unknown Error occurred in diskStatus()"
             log.debug("Unknown Error occurred in diskStatus() %s" % (err))
 
-    output={"host":env.host_string,"available":status,"return_code":return_code,"message":message}
+    service_id=hashlib.md5(env.host_string + mount).hexdigest()
+    last_checked=str(datetime.now())
+    output={"available":status,
+            "return_code":return_code,
+            "message":message,
+            "type":"disk",
+            "service_id":service_id,
+            "last_checked":last_checked
+            }
     _status={mount:output}
     return _status
 
@@ -102,25 +112,7 @@ def getDiskStatus(environment,hosts_list,username,mountpath,private_key='',debug
             disk_output = tasks.execute(diskStatus,mountpath)
             log.debug(">> END: Environment: %s Disk: %s check" %(environment,mountpath))
             disconnect_all() # Call this when you are done, or get an ugly exception!
-        #normalize output
-        """
-        {
-        "value": {'hostname1':True,
-                  'hostname2':False
-                 },
-        "return_code": {'hostname1':0,
-                        'hostname2':1
-                 }
-        }
-        """
-        for host in disk_output:
-            for host_key in disk_output[host]:
-                if "VALUE" == host_key.upper():
-                    normalized_output["value"][host]=disk_output[host][host_key]
-                elif "MESSAGE" == host_key.upper():
-                    normalized_output["message"][host]=disk_output[host][host_key]
-                elif "RETURN_CODE" == host_key.upper():
-                    normalized_output["return_code"][host]=disk_output[host][host_key]
+
     #print disk_output
     return disk_output
 
