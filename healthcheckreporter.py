@@ -115,7 +115,7 @@ class HealthcheckReporter(threading.Thread):
                         self.last_checked = str(datetime.now())
                         for service in self.config.services:
                             log.debug("Environment: %s Application: %s Hosts: %s" % (self.config.env_name,
-                                                                                     service.name,service.hosts.keys()))
+                                                                                     service.service,service.hosts.keys()))
                             self.last_service=service
                             service.getStatus()
                             log.debug("Status Response" % service.status)
@@ -158,7 +158,10 @@ class HealthcheckReporter(threading.Thread):
                             if not attributes['available']:
                                 if not host in offline:
                                     offline[host]={}
-                                offline[host].update(service)
+                                if not name in offline[host]:
+                                    offline[host][name]={}
+                                log.debug("Added service %s to offline list" % service[name])
+                                offline[host][name].update(attributes)
                                 counter+=1
             else:
                 log.debug("HealthcheckReporter services list is empty")

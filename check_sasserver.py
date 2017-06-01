@@ -47,6 +47,7 @@ def runsasserverstatus(scriptpath,default_timeout=30):
     status=False
     return_code=1
     message=''
+    valid_response=False
     if not scriptpath:
         log.debug('scriptpath is blank')
     else:
@@ -73,12 +74,14 @@ def runsasserverstatus(scriptpath,default_timeout=30):
                         if d['down_service_name']:
                             service=d['down_service_name']
                             status=False
+                            valid_response=True
                         elif d['up_service_name']:
                             service=d['up_service_name']
                             status=True
+                            valid_response=True
                         else:
                             service="sas.servers"
-                            status=True
+                            status=False
                         message=response.rstrip("\n\r")
                         service_id=hashlib.md5(env.host_string + service).hexdigest()
                         last_checked=str(datetime.now())
@@ -97,18 +100,9 @@ def runsasserverstatus(scriptpath,default_timeout=30):
                         log.debug("sas.servers command output %s" % response)
             else:
                 #capture message as it may be an error message
-                service="sas.servers"
-                status=False
                 message=result
-                service_id=hashlib.md5(env.host_string + service).hexdigest()
-                last_checked=str(datetime.now())
-                output_status={"available":status,
-                        "return_code":return_code,
-                        "message":message,
-                        "type":"sasserver.sh",
-                        "service_id":service_id,
-                        "last_checked":last_checked
-                        }
+                valid_response=True
+
 
         except CommandTimeout as connerr:
             message="%s did not respond" % scriptpath
@@ -127,12 +121,30 @@ def runsasserverstatus(scriptpath,default_timeout=30):
             message="Unknown Error occurred when executing sasserverstatus command"
             log.debug("Unknown Error occurred when executing sasserverstatus command %s" % (err))
 
+    if not valid_response:
+        collect_status={}
+        service="sas.servers status"
+        status=False
+        service_id=hashlib.md5(env.host_string + scriptpath).hexdigest()
+        last_checked=str(datetime.now())
+        output_status={"available":status,
+                "return_code":return_code,
+                "message":message,
+                "type":"sasserver.sh",
+                "service_id":service_id,
+                "last_checked":last_checked
+                }
+        if not scriptpath in collect_status:
+            collect_status[scriptpath]={}
+        collect_status[scriptpath]=output_status
+
     return collect_status
 
 
 def getsasserverstatus(environment,hosts_list,username,scriptpath,private_key='',debug=False):
     log = logging.getLogger('getsasserverstatus()')
     log.debug("Is Fabric debug enabled in configuration? %s" % debug)
+    sasserverstatus_output={}
     if not debug:
         logging.getLogger("paramiko").setLevel(logging.WARNING)
     else:
