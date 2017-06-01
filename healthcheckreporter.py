@@ -54,6 +54,7 @@ class HealthcheckReporter(threading.Thread):
             #self.template_path should point to directort where jinja2 template file is
             self.template_path=os.path.dirname(os.path.abspath(__file__))
             self.allservices=[]
+            self.services_status={}
             self.servicealerts={}
             #As this class is a thread, disable sys stdout and stderr
             sys.stdout = open('/dev/null', 'w')
@@ -76,6 +77,34 @@ class HealthcheckReporter(threading.Thread):
         def valid(self):
             return self.config.valid
 
+        def add(self,service_status):
+            log = logging.getLogger('HealthcheckReporter.add()')
+
+            log.debug("Before adding service: services_status %s" % json.dumps(self.services_status,indent=4))
+
+            log.debug("Adding service %s" % json.dumps(service_status,indent=4))
+
+            for host,service in service_status.items():
+
+                log.debug("Check this host %s" % host)
+                for name,attributes in service.items():
+                    if host in self.services_status:
+                        log.debug("Current services in host %s %s " % (host,self.services_status[host]))
+                        if name in self.services_status[host]:
+                            log.debug("Adding service %s" % name)
+                            self.services_status[host][name].update(attributes)
+                        else:
+                            log.debug("Name not found in services list")
+                            self.services_status[host].update(service)
+                    else:
+                        log.debug("Host not found in services list")
+                        log.debug("Adding new host to services_status %s" % json.dumps(service_status,indent=4))
+                        self.services_status[host]={}
+                        self.services_status[host].update(service_status[host])
+                    log.debug("New services_status %s" % json.dumps(self.services_status,indent=4))
+
+            log.debug("After adding service: services_status %s" % json.dumps(self.services_status,indent=4))
+
         def start(self):
             if self.start_event:
                 self.running=True
@@ -89,8 +118,8 @@ class HealthcheckReporter(threading.Thread):
                             log.debug("Environment: %s Application: %s Hosts: %s" % (self.config.env_name,
                                                                                      service.name,service.hosts.keys()))
                             self.last_service=service
-                            service.status()
-                            self.allservices.append(service)
+                            service.getStatus()
+                            self.add(service.status)
                         log.debug("** Status check ends **")
                     else:
                         log.debug("No applications loaded")
@@ -101,24 +130,57 @@ class HealthcheckReporter(threading.Thread):
 
 
         def save(self,type="",filename=''):
-            log = logging.getLogger('Healthcheck.save()')
+            log = logging.getLogger('HealthcheckReporter.save()')
 
 
         def getLastChecked(self):
-            log = logging.getLogger('Healthcheck.getLastChecked()')
+            log = logging.getLogger('HealthcheckReporter.getLastChecked()')
             return self.last_checked
 
-        def countServices(self):
-            log = logging.getLogger('Healthcheck.getAllServicesCount()')
-            countservices=0
-            if self.allservices:
-                for service in self.allservices:
-                    for host in service.hosts:
-                        countservices+=1
-            return countservices
+        def countCheckedServices(self):
+            log = logging.getLogger('HealthcheckReporter.getAllServicesCount()')
+            counter=0
+            if self.services_status:
+                for host,service in self.services_status.items():
+                    log.debug("Service found, increment counter %s" % json.dumps(service,indent=4))
+                    counter+=1
+            else:
+                log.debug("HealthcheckReporter services list is empty")
+            return counter
+
+        def getOfflineServices(self):
+            log = logging.getLogger('HealthcheckReporter.getOfflineServices()')
+            offline={}
+            counter=0
+            if self.services_status:
+                for host,service in self.services_status.items():
+                    log.debug("Check availability for service %s" % json.dumps(service,indent=4) )
+                    for name,attributes in service.items():
+                        log.debug("Availability is set to %s" % attributes['available'])
+                        if 'available' in attributes:
+                            if not attributes['available']:
+                                if not host in offline:
+                                    offline[host]={}
+                                offline[host].update(service)
+                                counter+=1
+            else:
+                log.debug("HealthcheckReporter services list is empty")
+            log.debug("Offline services %s" % json.dumps(offline,indent=4))
+            return counter,offline
+
+        def alert(self):
+            log = logging.getLogger('HealthcheckReporter.alert()')
+            offline_count=0
+            log.debug("Alert")
+            log.debug("Count of services checked %d" % self.countCheckedServices())
+            log.debug("Services checked %s" % json.dumps(self.services_status,indent=4))
+            offline_count,offline_services=self.getOfflineServices()
+            log.debug("Offline services count: %d" % offline_count)
+            log.debug("Offline services: %s" % offline_services)
+
 
         def getBadServicesCount(self):
-            log = logging.getLogger('Healthcheck.getBadServicesCount()')
+            log = logging.getLogger('HealthcheckReporter.getBadServicesCount()')
             countbadservices=0
             if self.allservices:
                 for service in self.allservices:
@@ -143,7 +205,7 @@ class HealthcheckReporter(threading.Thread):
             return hosts_desc
 
 
-        def getOfflineServices(self):
+        def getOfflineServices2(self):
             log = logging.getLogger('Healthcheck.getOfflineServices()')
             output={}
             count=0
@@ -196,7 +258,7 @@ class HealthcheckReporter(threading.Thread):
 
 
 
-        def alert(self):
+        def alert2(self):
             log = logging.getLogger('Healthcheck.alert()')
             count_all_services=self.countServices()
             badservices,count_badservices=self.getOfflineServices()

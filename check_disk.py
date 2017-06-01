@@ -33,7 +33,7 @@ def diskStatus(mount,default_timeout=30):
     #log.info(env.hosts)
     log = logging.getLogger('diskStatus()')
     status=False
-    return_code=0
+    return_code=1
     message=''
     if not mount:
         log.debug('Mount is empty')
@@ -70,8 +70,9 @@ def diskStatus(mount,default_timeout=30):
             message="Unknown Error occurred in diskStatus()"
             log.debug("Unknown Error occurred in diskStatus() %s" % (err))
 
-    output={"host":env.host_string,"value":status,"return_code":return_code,"message":message}
-    return output
+    output={"host":env.host_string,"available":status,"return_code":return_code,"message":message}
+    _status={mount:output}
+    return _status
 
 
 def getDiskStatus(environment,hosts_list,username,mountpath,private_key='',debug=False):
@@ -120,5 +121,8 @@ def getDiskStatus(environment,hosts_list,username,mountpath,private_key='',debug
                     normalized_output["message"][host]=disk_output[host][host_key]
                 elif "RETURN_CODE" == host_key.upper():
                     normalized_output["return_code"][host]=disk_output[host][host_key]
+    #print disk_output
+    return disk_output
 
-    return normalized_output
+if __name__ == '__main__':
+    getDiskStatus('test','localhost','blank','/tmp',private_key='',debug=False)

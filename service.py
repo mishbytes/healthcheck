@@ -30,6 +30,7 @@ class Service(object):
         self.checked=False
         self.available=False
         self.return_code=9999
+        self.status={}
         self.message=''
         self.last_checked=None
         self.command_timeoutseconds=30
@@ -45,8 +46,8 @@ class Service(object):
     def isAvailable(self):
         return self.available
 
-    def status(self):
-        log = logging.getLogger('Service.status()')
+    def getStatus(self):
+        log = logging.getLogger('service.getStatus()')
         log.debug("Is debug enabled for service %s? %s" % (self.name,self.debug_boolean))
         hosts_list=[]
         hosts_str=''
@@ -56,7 +57,8 @@ class Service(object):
             #response={"value":True|False,"return_code":return_code,"message":message}
             #log.debug("Checking WebApp: %s://%s:%s/%s" % (self.protocol,self.hosts,self.port,self.name))
             self.last_checked=str(datetime.now())
-            response=sasLogon(self.environment,
+            log.debug("Get status for service %s" % self.name)
+            self.status=sasLogon(self.environment,
                               self.protocol,
                               self.hosts_str,
                               self.port,
@@ -64,23 +66,18 @@ class Service(object):
                               self.user,
                               self.password,
                               debug=self.debug_boolean)
+            log.debug("Response from service %s type %s is %s " % (self.name,self.type.upper(),self.status))
             self.checked=True
-            self.return_code=response["return_code"]
-            self.available=response["value"]
-            self.message=response["message"]
-
         elif self.type.upper() == 'DISK':
             logging.debug("Checking Disk")
             self.last_checked=str(datetime.now())
-            response=getDiskStatus(self.environment,
+            self.status=getDiskStatus(self.environment,
                                    self.hosts_list,
                                    self.user,
                                    self.name,
                                    private_key=self.ssh_private_key_filename,
                                    debug=self.debug_boolean)
+            log.debug("Response from service %s type %s is %s " % (self.name,self.type.upper(),self.status))
             self.checked=True
-            self.return_code=response["return_code"]
-            self.available=response["value"]
-            self.message=response["message"]
         else:
             log.debug("Invalid Application Type")

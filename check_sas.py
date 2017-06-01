@@ -114,5 +114,7 @@ def sasLogon(environment,protocol,host,port,application,user,password,debug=Fals
         if conn:
             conn.close()
 
-    output={"value":AVAILABLE,"return_code":return_code,"message":message}
-    return output
+    output={"available":AVAILABLE,"return_code":return_code,"message":message}
+    _status={host:{application:output}}
+    log.debug("Status of %s: %s" % (application,_status))
+    return _status
