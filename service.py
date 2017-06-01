@@ -4,7 +4,8 @@ import threading
 from datetime import datetime
 
 #project
-from check_sas import sasLogon
+from check_sasweblogon import sasLogon
+from check_sasserver import getsasserverstatus
 from check_disk import getDiskStatus
 
 log = logging.getLogger('Service')
@@ -72,6 +73,17 @@ class Service(object):
             logging.debug("Checking Disk")
             self.last_checked=str(datetime.now())
             self.status=getDiskStatus(self.environment,
+                                   self.hosts_list,
+                                   self.user,
+                                   self.name,
+                                   private_key=self.ssh_private_key_filename,
+                                   debug=self.debug_boolean)
+            log.debug("Response from service %s type %s is %s " % (self.name,self.type.upper(),self.status))
+            self.checked=True
+        elif self.type.upper() == 'SAS.SERVERS':
+            logging.debug("Checking Disk")
+            self.last_checked=str(datetime.now())
+            self.status=getsasserverstatus(self.environment,
                                    self.hosts_list,
                                    self.user,
                                    self.name,

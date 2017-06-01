@@ -66,7 +66,7 @@ class HealthCheckConfigStore(object):
         CONFIG_OTHER_OPTIONS=['env_name','env_level','alert_lifetime','jinja2_template','verbose','version','comment']
         CONFIG_ALL_OPTIONS=CONFIG_GOLDEN_OPTIONS + CONFIG_EMAIL_OPTIONS + CONFIG_OTHER_OPTIONS
 
-        CONFIG_SERVICES_GOLDEN_OPTIONS=['type2','name','protocol','hosts','port','user','password']
+        CONFIG_SERVICES_GOLDEN_OPTIONS=['type2','service','protocol','hosts','port','user','password']
         CONFIG_SERVICES_OTHER_OPTIONS=['enabled','debug','description']
         CONFIG_SERVICES_TYPE_VALID_VALUES=['webapp','disk']
         CONFIG_SERVICES_ALL_OPTIONS= CONFIG_SERVICES_GOLDEN_OPTIONS + CONFIG_SERVICES_OTHER_OPTIONS
@@ -134,17 +134,17 @@ class HealthCheckConfigStore(object):
 
 
                 #Find and add services
-                for service in config["services"]:
+                for services in config["services"]:
 
                     service_upper_case=[]
-                    for k in service:
+                    for k in services:
                         service_upper_case.append(k.upper())
 
                     for service_upcase_property in service_upper_case:
                         log.debug("upper case service properties %s " % service_upcase_property)
 
                     if "ENABLED" in service_upper_case:
-                        if "NO" == service["enabled"].upper():
+                        if "NO" == services["enabled"].upper():
                             service_enabled=False
                         else:
                             service_enabled=True
@@ -152,13 +152,13 @@ class HealthCheckConfigStore(object):
                         service_enabled=True
 
                     if "SSH_ID_RSA_FILENAME" in service_upper_case:
-                        ssh_id_rsa_filename=service["ssh_id_rsa_filename"]
+                        ssh_id_rsa_filename=services["ssh_id_rsa_filename"]
                         log.debug("Set non-default ssh private key  %s" % ssh_id_rsa_filename)
                     else:
                         ssh_id_rsa_filename=''
 
                     if "DEBUG" in service_upper_case:
-                        if "YES" == service["debug"].upper():
+                        if "YES" == services["debug"].upper():
                             debug=True
                         else:
                             debug=False
@@ -167,22 +167,22 @@ class HealthCheckConfigStore(object):
                         debug=False
 
                     if  service_enabled:
-                        for name in service['name']:
+                        for service in services['service']:
                             self.services.append(Service(self.env_name,
                                                      self.env_level,
-                                                     name,
-                                                     service['type'],
-                                                     service['hosts'],
-                                                     service['port'],
-                                                     service['protocol'],
-                                                     service['user'],
-                                                     service['password'],
+                                                     service,
+                                                     services['type'],
+                                                     services['hosts'],
+                                                     services['port'],
+                                                     services['protocol'],
+                                                     services['user'],
+                                                     services['password'],
                                                      debug=debug,
                                                      ssh_private_key_filename=ssh_id_rsa_filename
                                                      ))
-                            log.debug("Added Service %s to check" % name)
+                            log.debug("Added Service %s to check" % service)
                     else:
-                        log.debug("Removed Service %s from check" % service)
+                        log.debug("Removed Service %s from check" % services)
 
             except (IOError, OSError) as e:
                 log.error("Exception occurred while loading config file")
@@ -208,7 +208,7 @@ class HealthCheckConfigStore(object):
         log = logging.getLogger('config.HealthCheckConfig.validate()')
         VALID_CONFIG_FILE=True
         CONFIG_GOLDEN_OPTIONS=['log','interval','frequency','services']
-        CONFIG_SERVICES_GOLDEN_OPTIONS=['type','name','protocol','hosts','port','user','password']
+        CONFIG_SERVICES_GOLDEN_OPTIONS=['type','service','protocol','hosts','port','user','password']
 
         if os.path.exists(configfile):
                 try:
