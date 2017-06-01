@@ -2,7 +2,7 @@
 import logging
 import socket
 import hashlib
-import datetime
+from datetime import datetime
 
 #Fabric for ssh connections
 from fabric import tasks

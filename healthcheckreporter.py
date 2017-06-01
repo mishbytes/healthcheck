@@ -83,10 +83,10 @@ class HealthcheckReporter(threading.Thread):
             log.debug("Before adding service: services_status %s" % json.dumps(self.services_status,indent=4))
             log.debug("Adding service %s" % json.dumps(service_status,indent=4))
 
-            for host,service in service_status.iteritems():
+            for host,services in service_status.iteritems():
 
                 log.debug("Check this host %s" % host)
-                for name,attributes in service.iteritems():
+                for name,attributes in services.iteritems():
                     if host in self.services_status:
                         if name in self.services_status[host]:
                             log.debug("Updating existing service to services_status %s" % json.dumps(service_status,indent=4))
@@ -95,7 +95,7 @@ class HealthcheckReporter(threading.Thread):
                             log.debug("Name not found in services list")
                             log.debug("Adding new service to services_status %s" % json.dumps(service_status,indent=4))
                             self.services_status[host][name]={}
-                            self.services_status[host].update(service)
+                            self.services_status[host].update(services)
                     else:
                         log.debug("Host not found in services list")
                         log.debug("Adding new host to services_status %s" % json.dumps(service_status,indent=4))
@@ -118,6 +118,7 @@ class HealthcheckReporter(threading.Thread):
                                                                                      service.name,service.hosts.keys()))
                             self.last_service=service
                             service.getStatus()
+                            log.debug("Status Response" % service.status)
                             self.add(service.status)
                         log.debug("** Status check ends **")
                     else:
