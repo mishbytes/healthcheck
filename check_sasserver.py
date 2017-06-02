@@ -39,10 +39,18 @@ def runsasserverstatus(scriptpath,default_timeout=30):
 
     collect_status={}
 
+
+
+    #When using .* expression Python 2.6 throws nothing to repeat error
+    #Replace .* with .+
     format_pat= re.compile(
-                            r'(?:(?P<down_service_name>.*)(?=.*\sis\sNOT\sup.*$))?'
-                            r'(?:(?P<up_service_name>.*)(?=.*\sis\sUP.*$))?'
-                           )
+                            r'(?:(?P<down_service_name>.+)(?=(.+)?\sis\sNOT\sup(.+)?$))?'
+                            r'(?:(?P<up_service_name>.+)(?=(.+)?\sis\sUP(.+)?$))?'
+                      )
+    #format_pat= re.compile(
+    #                        r'(?:(?P<down_service_name>.*)(?=.*\sis\sNOT\sup.*$))?'
+    #                        r'(?:(?P<up_service_name>.*)(?=.*\sis\sUP.*$))?'
+    #                       )
 
     status=False
     return_code=1
@@ -80,8 +88,8 @@ def runsasserverstatus(scriptpath,default_timeout=30):
                             status=True
                             valid_response=True
                         else:
-                            service="sas.servers"
-                            status=False
+                            #reject response and go back to main loop
+                            continue
                         message=response.rstrip("\n\r")
                         service_id=hashlib.md5(env.host_string + service).hexdigest()
                         last_checked=str(datetime.now())
