@@ -1,9 +1,9 @@
 ## HealthCheck Agent
 
 #### Reports:
-SAS Web application Authentication status
-sas.servers status
-Unix Directory (e.g. /sasconfig) status
+* SAS Web application Authentication status
+* sas.servers status
+* Unix Directory (e.g. /sasconfig) status
 
 #### Requirements
 
