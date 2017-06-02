@@ -1,6 +1,11 @@
-## Checks health of services
+## HealthCheck Agent
 
-#### Requirements 
+#### Reports:
+SAS Web application Authentication status
+sas.servers status
+Unix Directory (e.g. /sasconfig) status
+
+#### Requirements
 
 * If installing dependent modules from soucre, the following modules are required.
 	* yum install python-devel.x86_64
