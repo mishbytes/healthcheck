@@ -5,141 +5,182 @@
 
 <!--[if mso]>
 <left>
-<table><tr><td width="1080px">
+<table><tr><td width="4000px">
 <![endif]-->
 
-<div style="max-width:1080px; margin:0 auto;">
 
-<p align="center" style="background-color: #f5f5f5;width:100%" >{{ report_title }}</p>
+<div style="max-width:4000px;
+            margin:0 auto;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin-bottom: 30px;
+            margin-left: 0px;
+            margin-right: 0px;
+            margin-top: 0px;
+            font-size: 13px;
+			vertical-align: baseline;
+			position: relative
+            ">
 
-<table border="0"
-       cellpadding="0"
-       align=left
-       cellspacing="0"
-       style="margin-left: auto;
-              margin-right: auto;
+
+<table style="background-clip: border-box;
+              background-color: #FDF5ED;
+              color: #F29D50;
+              border-color: #F8CEA7;
+              border-width: 1px;
+              border-style: solid;
+              font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+              font-size: 16px;
+              font-style: solid;
+			  height: 30px;
+              font-variant-caps: normal;
+              font-weight: normal;
+              padding-bottom: 0px;
               padding-left: 0px;
               padding-right: 0px;
-              width: 50%;">
-  <tr style="background-color: #f5f5f5;
-             margin-bottom: 5px;
-             min-height: 10px;">
-        <td style="padding: 5px;">
-        Total Services Checked
-        </td>
-        <td align="left">{{ total_services }}</td>
-  </tr>
-  <tr style="background-color: #f5f5f5;
-             margin-bottom: 5px;
-             min-height: 10px;">
-        <td style="padding: 5px;">
-        Total Services Unavailable
-        </td>
-        <td align="left">{{ total_services_unavailable }}</td>
-  </tr>
-  <tr style="background-color: #f5f5f5;
-             margin-bottom: 5px;
-             min-height: 10px;">
-        <td style="padding: 5px;">
-        Alerts in this email
-        </td>
-        <td align="left">{{ alerts_count_for_email }}</td>
-  </tr>
-  <tr><td>&nbsp;</td></tr>
+              padding-top: 0px;
+              position: relative;
+              width: 100%;
+              text-align: center;">
+<tr>
+	<td>Service Down Alert</td>
+</tr>
+</table>
+</div>
+
+<div style="max-width:4000px;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin-bottom: 0px;
+            margin-left: 0px;
+            margin-right: 0px;
+            margin-top: 0px;
+            font-size: 12px;
+			vertical-align: baseline;
+			position: relative
+            ">
+
+
+<table style="background-clip: border-box;
+              background-color: #e1eff8;
+              border-color: #818181;
+              border-width: 1px;
+              border-style: solid;
+              font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+              font-size: 13px;
+              font-style: solid;
+			  height: 30px;
+              font-variant-caps: normal;
+              font-weight: normal;
+              padding-bottom: 0px;
+              padding-left: 0px;
+              padding-right: 0px;
+              padding-top: 0px;
+              position: relative;
+              width: 100%;
+              text-align: left;">
+<tr>
+	<td>Summary</td>
+</tr>
 </table>
 
-<table border="1" cellpadding="0" cellspacing="0" style="margin-left: auto; margin-right: auto; padding-left: 0px; padding-right: 0px; width: 100%;">
-    <tr>
-          <td>
-            <h2 style="width: 200px;
-                       font-size: 16px;
-                       font-weight: 500;
-                       color: #a94442;
-                       font-family: inherit;
-                       line-height: 0.1;
-                       margin-bottom: 10px;
-                       margin-top: 10px;">
-              Tier Name
-            </h2>
-          </td>
-          <td>
-            <h2 style="width: 180px;
-                       font-size: 16px;
-                       font-weight: 500;
-                       color: #a94442;
-                       font-family: inherit;
-                       line-height: 0.1;
-                       margin-bottom: 10px;
-                       margin-top: 10px;">
-              Host
-            </h2>
-          </td>
-          <td>
-            <h2 style="width: 130px;
-                       font-size: 16px;
-                       font-weight: 500;
-                       color: #a94442;
-                       font-family: inherit;
-                       line-height: 0.1;
-                       margin-bottom: 10px;
-                       margin-top: 10px;
-                      ">
-              Service
-            </h2>
-          </td>
-          <td>
-            <h2 style="width: 100px;
-                       font-size: 16px;
-                       font-weight: 500;
-                       color: #a94442;
-                       font-family: inherit;
-                       line-height: 0.1;
-                       margin-bottom: 10px;
-                       margin-top: 10px;
-                      ">
-              Type
-            </h2>
-          </td>
-          <td>
-            <h2 style="width: 100px;
-                       font-size: 16px;
-                       font-weight: 500;
-                       color: #a94442;
-                       font-family: inherit;
-                       line-height: 0.1;
-                       margin-bottom: 10px;
-                       margin-top: 10px;
-                      ">
-              Status
-            </h2>
-          </td>
-          <td>
-            <h2 style="width: 250px;
-                       font-size: 16px;
-                       font-weight: 500;
-                       color: #a94442;
-                       font-family: inherit;
-                       line-height: 0.1;
-                       margin-bottom: 10px;
-                       margin-top: 10px;
-                      ">
-              Last Checked
-            </h2>
-          </td>
-          <td>
-            <h2 style="width: 250px;
-                       font-size: 16px;
-                       font-weight: 500;
-                       color: #a94442;
-                       font-family: inherit;
-                       line-height: 0.1;
-                       margin-bottom: 10px;
-                       margin-top: 10px;
-                      ">
-              Additional Information
-            </h2>
-          </td>
-    </tr>
+</div>
+
+<div style="max-width:4000px;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin-bottom: 30px;
+            margin-left: 0px;
+            margin-right: 0px;
+            margin-top: 0px;
+            font-size: 12px;
+			vertical-align: baseline;
+			position: relative
+            ">
+
+<table style="background-clip: border-box;
+              background-color: #e1eff8;
+              border-color: #818181;
+              border-width: 1px;
+              border-style: solid;
+              font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+              font-size: 12px;
+			        height: 30px;
+              font-variant-caps: normal;
+              font-weight: normal;
+              padding-bottom: 0px;
+              padding-left: 0px;
+              padding-right: 0px;
+              padding-top: 0px;
+              position: relative;
+              width: 100%;
+              text-align: left;">
+<tr >
+        <td >
+        Total Services Checked
+        </td>
+        <td align="right">{{ total_services }}</td>
+  </tr>
+  <tr >
+        <td >
+        Total Services Unavailable
+        </td>
+        <td align="right">{{ total_services_unavailable }}</td>
+  </tr>
+  <tr >
+        <td >
+        Alerts in this email
+        </td>
+        <td align="right">{{ alerts_count_for_email }}</td>
+  </tr>
+</table>
+</div>
+
+<div style="max-width:4000px;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin-bottom: 80px;
+            margin-left: 0px;
+            margin-right: 0px;
+            margin-top: 0px;
+            font-size: 13px;
+			      vertical-align: baseline;
+			      position: relative;
+            ">
+            <table border="0" cellpadding="0" cellspacing="0"
+                   style="margin-left:
+                          auto; margin-right: auto; padding-left: 0px; padding-right: 0px; width: 100%;
+                          border:#818181 solid 0px;"
+                          >
+                <tr bgcolor="#e1eff8">
+                      <td width="12%" height="30" align="center"
+                            bgcolor="#e1eff8"
+                            style="border-left:#818181 solid 1px;border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
+                          Tier Name
+                      </td>
+                      <td width="12%" height="30" align="center"
+                          style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
+                          Host Name
+                      </td>
+                      <td width="8%" height="30" align="center"
+                          style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
+                          Service Name
+                      </td>
+                      <td width="4%" height="30" align="center"
+                          style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
+                          Type
+                      </td>
+                      <td width="6%" height="30" align="center"
+                          style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
+                          Status
+                      </td>
+                      <td width="8%" height="30" align="center"
+                          style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
+                          Last Checked
+                        </h2>
+                      </td>
+                      <td width="35%" height="30" align="center"
+                          style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
+                          Additional Information
+                        </h2>
+                      </td>
+                </tr>
 {% set vars = {'first_row': True} %}
 {% for host, services in service_status_dicts.items() %}
   {% set each_host_services_count = service_status_dicts[host]|length %}
@@ -147,28 +188,72 @@
   {% for service_name,service_values in services.items() %}
         <tr>
           {% if vars.first_row %}
-            <td rowspan="{{ each_host_services_count }}">{{ hosts_friendlyname[host]}} </td>
-            <td rowspan="{{ each_host_services_count }}"> {{ host }} </td>
+            <td rowspan="{{ each_host_services_count }}"
+                width="12%" height="25" align="center"
+                style="border-left:#818181 solid 1px;border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
+                {{ hosts_friendlyname[host]}}
+            </td>
+            <td rowspan="{{ each_host_services_count }}"
+                width="10%" height="25" align="center"
+                style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
+                {{ host }}
+            </td>
             {% if vars.update({'first_row': False}) %} {% endif %}
           {% endif %}
-          <td>{{ service_name }}</td>
-          <td>{{ service_values['type'] }}</td>
+          <td width="8%" height="25" align="center"
+              style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
+              {{ service_name }}
+          </td>
+          <td width="4%" height="25" align="center"
+             style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
+             {{ service_values['type'] }}
+          </td>
           {% if service_values['available'] %}
-            <td>Available</td>
+            <td width="8%" height="25" align="center"
+                style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
+                Available
+            </td>
           {% else %}
-            <td>Not Available</td>
+            <td width="8%" height="25" align="center"
+                style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
+                Not Available
+            </td>
           {% endif %}
-          <td>{{ service_values['last_checked'] }}</td>
-          <td>{{ service_values['message'] }}</td>
+          <td width="12%" height="25" align="center"
+              style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
+              {{ service_values['last_checked'] }}
+          </td>
+          <td width="25%" height="25" align="center"
+              style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;" >
+              {{ service_values['message'] }}
+          </td>
         </tr>
 
   {% endfor %}
 {% endfor %}
 </table>
 </div>
+
 <!--[if mso]>
 </td></tr></table>
 </left>
 <![endif]-->
+<div style="max-width:4000px;
+            margin:0 auto;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin-bottom: 20px;
+            margin-left: 0px;
+            margin-right: 0px;
+            margin-top: 0px;
+            font-size: 13px;
+			      vertical-align: baseline;
+			      position: relative
+            ">
+<footer>
+   <h3>Footnotes</h3>
+   <ol>
+     <li>{{ report_title }}</li>
+   </ol>
+ </footer>
 
 </body></html>
