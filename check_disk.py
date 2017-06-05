@@ -26,6 +26,7 @@ env.key_filename='~/.ssh/id_rsa'
 #This allows users to ensure a Fabric session will always terminate cleanly
 #instead of blocking on user input forever when unforeseen circumstances arise.
 env.abort_on_prompts=True
+env.timeout=10
 
 #a Boolean setting determining whether Fabric exits when detecting
 #errors on the remote end
@@ -106,7 +107,8 @@ def getDiskStatus(environment,hosts_list,username,mountpath,private_key='',debug
         with settings(
                         hide('everything'),
                         key_filename=private_key,
-                        user = username
+                        user = username,
+                        keepalive=10
                       ):
             log.debug(">> BEGIN: Environment: %s Disk: %s check" %(environment,mountpath))
             disk_output = tasks.execute(diskStatus,mountpath)

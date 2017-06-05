@@ -10,6 +10,8 @@ from fabric import tasks
 from fabric.api import run,env, run, execute, parallel,settings,hide
 from fabric.network import disconnect_all
 from fabric.exceptions import CommandTimeout,NetworkError
+import paramiko
+import fabric.version
 
 log = logging.getLogger(__name__)
 
@@ -27,6 +29,8 @@ env.key_filename='~/.ssh/id_rsa'
 #This allows users to ensure a Fabric session will always terminate cleanly
 #instead of blocking on user input forever when unforeseen circumstances arise.
 env.abort_on_prompts=True
+env.timeout=10
+env.keepalive=10
 
 #a Boolean setting determining whether Fabric exits when detecting
 #errors on the remote end
@@ -115,6 +119,7 @@ def runsasserverstatus(scriptpath,default_timeout=30):
         except CommandTimeout as connerr:
             message="%s did not respond" % scriptpath
             log.debug("%s did not respond %s" % (scriptpath,connerr))
+            log.exception(connerr)
         except NetworkError as neterr:
             message="Unable to connect to %s" % (env.host_string)
             log.debug("Unable to connect to %s" % (env.host_string))
@@ -156,9 +161,11 @@ def getsasserverstatus(environment,hosts_list,username,scriptpath,private_key=''
     if not debug:
         logging.getLogger("paramiko").setLevel(logging.WARNING)
     else:
-        log.debug("Debug enabled")
+        logging.getLogger("paramiko").setLevel(logging.DEBUG)
 
     log.debug(hosts_list)
+    log.debug("Paramiko Version: %s" % paramiko.__version__)
+    log.debug("Fabric Version: %s   " % fabric.version.get_version())
     if hosts_list:
         env.hosts = hosts_list
         env.parallel=True
@@ -180,5 +187,5 @@ def getsasserverstatus(environment,hosts_list,username,scriptpath,private_key=''
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    hosts=["192.168.56.201","192.168.56.202"]
-    getsasserverstatus('test',hosts,'sas','/tmp/sasserver.sh',private_key='/vagrant/va73_dist/ssh_keys/id_rsa',debug=False)
+    hosts=["192.168.56.201"]
+    getsasserverstatus('test',hosts,'sas','/tmp/sasserver.sh',private_key='/vagrant/va73_dist/ssh_keys/id_rsa',debug=True)
