@@ -55,7 +55,7 @@ class HealthcheckReporter(threading.Thread):
             self.template_path=os.path.dirname(os.path.abspath(__file__))
             self.allservices=[]
             self.services_status={}
-            self.servicealerts={}
+            self.servicealertstimer={}
             #As this class is a thread, disable sys stdout and stderr
             sys.stdout = open('/dev/null', 'w')
             sys.stderr = open('/dev/null', 'w')
@@ -169,10 +169,10 @@ class HealthcheckReporter(threading.Thread):
                                 counter+=1
                             else:
                                 #If service available remove it from alert list
-                                id=service_attributes['service_id']
-                                if id in self.servicealerts:
-                                    #remove id from service alert dict
-                                    del self.servicealerts[id]
+                                id=attributes['service_id']
+                                if id in self.servicealertstimer:
+                                    #Service is now Available - reset alert timer
+                                    del self.servicealertstimer[id]
 
             else:
                 log.debug("HealthcheckReporter services list is empty")
@@ -199,14 +199,14 @@ class HealthcheckReporter(threading.Thread):
                     if not service_name in alertservices[host]:
                         alertservices[host][service_name]={}
                     id=service_attributes['service_id']
-                    if id in self.servicealerts:
-                        last_alert_time=self.servicealerts[id]
+                    if id in self.servicealertstimer:
+                        last_alert_time=self.servicealertstimer[id]
                         age_of_last_alert=time.time() - last_alert_time
                         if age_of_last_alert > alert_lifetime:
                             log.debug("Age of Alert for service %s exceeded alert life time %s" % (service_name,alert_lifetime))
                             log.debug("Add service to alert list %s" % service_name)
                             alerts_count_for_email+=1
-                            self.servicealerts[id]=time.time()
+                            self.servicealertstimer[id]=time.time()
                             alert_added=True
                             alertservices[host][service_name].update(service_attributes)
                         else:
@@ -214,12 +214,14 @@ class HealthcheckReporter(threading.Thread):
                     else:
                         log.debug("This first alert for service %s since agent start" % service_name)
                         alerts_count_for_email+=1
-                        self.servicealerts[id]=time.time()
+                        self.servicealertstimer[id]=time.time()
                         alert_added=True
                         alertservices[host][service_name].update(service_attributes)
-            log.debug(json.dumps(self.servicealerts,indent=4))
+            log.debug(json.dumps(self.servicealertstimer,indent=4))
             log.debug("Following services will be alerted")
             log.debug(json.dumps(alertservices,indent=4))
+
+            log.info("Number of offline services: %d" % offline_count)
 
             if alert_added:
                 log.info("Number of Alert found %d " % alerts_count_for_email)
@@ -236,7 +238,7 @@ class HealthcheckReporter(threading.Thread):
                 log.debug(badservice_html)
                 self.sendemail(badservice_html)
             else:
-                log.info("No alerts found for alerting")
+                log.debug("No alerts found for alerting")
 
 
 
