@@ -153,16 +153,27 @@ class HealthcheckReporter(threading.Thread):
                 for host,service in self.services_status.iteritems():
                     log.debug("Check availability for service %s" % json.dumps(service,indent=4) )
                     for name,attributes in service.iteritems():
-                        log.debug("Availability is set to %s" % attributes['available'])
                         if 'available' in attributes:
+                            log.debug("Availability is set to %s" % attributes['available'])
                             if not attributes['available']:
+                                #Service is offline
                                 if not host in offline:
+                                    #new offline host
                                     offline[host]={}
                                 if not name in offline[host]:
+                                    #new service in existing offline host list
                                     offline[host][name]={}
+                                #add service to offline dictionary
                                 log.debug("Added service %s to offline list" % service[name])
                                 offline[host][name].update(attributes)
                                 counter+=1
+                            else:
+                                #If service available remove it from alert list
+                                id=service_attributes['service_id']
+                                if id in self.servicealerts:
+                                    #remove id from service alert dict
+                                    del self.servicealerts[id]
+
             else:
                 log.debug("HealthcheckReporter services list is empty")
             log.debug("Offline services %s" % json.dumps(offline,indent=4))
