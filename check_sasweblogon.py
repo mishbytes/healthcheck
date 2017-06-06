@@ -92,13 +92,13 @@ def sasLogon(environment,protocol,host,port,application,user,password,debug=Fals
         log.debug("Bad Status Line %s" % e)
     except urllib2.HTTPError as httperr:
         return_code = httperr.code
-        message = "HTTP Error %d" % return_code
-        message = httperr.reason
+        msg = httperr.msg
+        message = "%d %s" % (return_code,msg)
         log.exception(httperr)
     except httplib.HTTPException as e:
         log.debug(e)
         return_code = e.errno
-        message = "Failed to get TGT return code is %d" % return_code
+        message = "Failed to get TGT HTTP error code %d" % return_code
         log.debug(message)
         #message=e
     except socket.error as socketmsg:
