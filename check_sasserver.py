@@ -43,7 +43,7 @@ def runsasserverstatus(scriptpath,default_timeout=30):
 
     collect_status={}
 
-    ignore_services=["SAS Environment Manager Server"]
+    ignore_services=["SAS Environment Manager"]
 
     #When using .* expression Python 2.6 throws nothing to repeat error
     #Replace .* with .+
@@ -93,7 +93,7 @@ def runsasserverstatus(scriptpath,default_timeout=30):
                     match_dict = format_pat.match(response)
                     if match_dict:
                         output_line = dict(match_dict.groupdict())
-                        log.debug("    Regex groups: %s" % d)
+                        log.debug("    Regex groups: %s" % output_line)
                         if output_line['down_service_name']:
                             service=output_line['down_service_name']
                             status=False

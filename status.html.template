@@ -149,20 +149,20 @@
                           border:#818181 solid 0px;"
                           >
                 <tr bgcolor="#e1eff8">
-                      <td width="12%" height="30" align="center"
+                      <td width="8%" height="30" align="center"
                             bgcolor="#e1eff8"
                             style="border-left:#818181 solid 1px;border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
                           Tier Name
                       </td>
-                      <td width="12%" height="30" align="center"
+                      <td width="11%" height="30" align="center"
                           style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
                           Host Name
                       </td>
-                      <td width="8%" height="30" align="center"
+                      <td width="18%" height="30" align="center"
                           style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
                           Service Name
                       </td>
-                      <td width="4%" height="30" align="center"
+                      <td width="8%" height="30" align="center"
                           style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
                           Type
                       </td>
