@@ -90,6 +90,11 @@ def sasLogon(environment,protocol,host,port,application,user,password,debug=Fals
 
     except httplib.BadStatusLine as e:
         log.debug("Bad Status Line %s" % e)
+    except urllib2.HTTPError as httperr:
+        return_code = httperr.code
+        message = "HTTP Error %d" % return_code
+        message = httperr.reason
+        log.exception(httperr)
     except httplib.HTTPException as e:
         log.debug(e)
         return_code = e.errno

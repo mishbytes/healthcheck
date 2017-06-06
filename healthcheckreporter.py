@@ -29,6 +29,7 @@ from service import Service
 from config import HealthCheckConfigStore
 from utils.hosts import get_hostname
 from output import generateStatusHtmlPage
+from messages import Messages
 
 
 log = logging.getLogger('HealthCheckReporter')
@@ -57,6 +58,7 @@ class HealthcheckReporter(threading.Thread):
             self.services_status={}
             self.servicealertstimer={}
             self.responsetime=0
+            self.messages=Messages()
             #As this class is a thread, disable sys stdout and stderr
             sys.stdout = open('/dev/null', 'w')
             sys.stderr = open('/dev/null', 'w')
@@ -78,35 +80,11 @@ class HealthcheckReporter(threading.Thread):
         def valid(self):
             return self.config.valid
 
-        def add(self,service_status):
-            log = logging.getLogger('HealthcheckReporter.add()')
-
-            log.debug("Before adding service: services_status %s" % json.dumps(self.services_status,indent=4))
-            log.debug("Adding service %s" % json.dumps(service_status,indent=4))
-
-            for host,services in service_status.iteritems():
-
-                log.debug("Check this host %s" % host)
-                for name,attributes in services.iteritems():
-                    if host in self.services_status:
-                        if name in self.services_status[host]:
-                            log.debug("Updating existing service to services_status %s" % json.dumps(service_status,indent=4))
-                            self.services_status[host][name].update(attributes)
-                        else:
-                            log.debug("Name not found in services list")
-                            log.debug("Adding new service to services_status %s" % json.dumps(service_status,indent=4))
-                            self.services_status[host][name]={}
-                            self.services_status[host].update(services)
-                    else:
-                        log.debug("Host not found in services list")
-                        log.debug("Adding new host to services_status %s" % json.dumps(service_status,indent=4))
-                        self.services_status[host]={}
-                        self.services_status[host].update(service_status[host])
-
-            log.debug("After adding service: services_status %s" % json.dumps(self.services_status,indent=4))
 
         def start(self):
             self.responsetime=0
+            #Empty messages before checking every service
+            self.messages.reset()
             if self.start_event:
                 self.running=True
                 log = logging.getLogger('Healthcheck.start()')
@@ -124,7 +102,11 @@ class HealthcheckReporter(threading.Thread):
                             elapsed=time.time()-start_time
                             self.responsetime+=elapsed
                             log.debug("Status Response" % service.status)
-                            self.add(service.status)
+                            try:
+                                self.messages.add(service.status)
+                            except ValueError as e:
+                                log.debug("Invalid status format")
+                                log.exception(e)
                         log.debug("** Status check ends **")
                     else:
                         log.debug("No applications loaded")
@@ -138,97 +120,30 @@ class HealthcheckReporter(threading.Thread):
             log = logging.getLogger('HealthcheckReporter.getLastChecked()')
             return self.last_checked
 
-        def countServices(self):
-            log = logging.getLogger('HealthcheckReporter.countServices()')
-            counter=0
-            if self.services_status:
-                for host,services in self.services_status.iteritems():
-                    for service in services:
-                        log.debug("Service found, increment counter %s" % json.dumps(service,indent=4))
-                        counter+=1
-            else:
-                log.debug("HealthcheckReporter services list is empty")
-            return counter
-
-        def getOfflineServices(self):
-            log = logging.getLogger('HealthcheckReporter.getOfflineServices()')
-            offline={}
-            counter=0
-            if self.services_status:
-                for host,service in self.services_status.iteritems():
-                    log.debug("Check availability for service %s" % json.dumps(service,indent=4) )
-                    for name,attributes in service.iteritems():
-                        if 'available' in attributes:
-                            log.debug("Availability is set to %s" % attributes['available'])
-                            if not attributes['available']:
-                                #Service is offline
-                                if not host in offline:
-                                    #new offline host
-                                    offline[host]={}
-                                if not name in offline[host]:
-                                    #new service in existing offline host list
-                                    offline[host][name]={}
-                                #add service to offline dictionary
-                                log.debug("Added service %s to offline list" % service[name])
-                                offline[host][name].update(attributes)
-                                counter+=1
-                            else:
-                                #If service available remove it from alert list
-                                id=attributes['service_id']
-                                if id in self.servicealertstimer:
-                                    #Service is now Available - reset alert timer
-                                    del self.servicealertstimer[id]
-
-            else:
-                log.debug("HealthcheckReporter services list is empty")
-            log.debug("Offline services %s" % json.dumps(offline,indent=4))
-            return counter,offline
 
         def alert(self):
             log = logging.getLogger('HealthcheckReporter.alert()')
+
             offline_count=0
-            log.debug("Services checked %s" % json.dumps(self.services_status,indent=4))
-            offline_count,offline_services=self.getOfflineServices()
-            log.debug("Offline services count: %d" % offline_count)
-            log.debug("Offline services: %s" % offline_services)
-            count_all_services=self.countServices()
-            log.debug("Count of services checked %d" % self.countServices())
-            hosts_fn=self.getHostsfriendlyname()
             alertservices={}
             alerts_count_for_email=0
             alert_added=False
-            alert_lifetime=self.config.alert_lifetime
-            for host,services in offline_services.iteritems():
-                alertservices[host]={}
-                for service_name,service_attributes in services.iteritems():
-                    if not service_name in alertservices[host]:
-                        alertservices[host][service_name]={}
-                    id=service_attributes['service_id']
-                    if id in self.servicealertstimer:
-                        last_alert_time=self.servicealertstimer[id]
-                        age_of_last_alert=time.time() - last_alert_time
-                        if age_of_last_alert > alert_lifetime:
-                            log.debug("Age of Alert for service %s exceeded alert life time %s" % (service_name,alert_lifetime))
-                            log.debug("Add service to alert list %s" % service_name)
-                            alerts_count_for_email+=1
-                            self.servicealertstimer[id]=time.time()
-                            alert_added=True
-                            alertservices[host][service_name].update(service_attributes)
-                        else:
-                            log.debug("Last Alert for service %s not expired " % service_name)
-                    else:
-                        log.debug("This first alert for service %s since agent start" % service_name)
-                        alerts_count_for_email+=1
-                        self.servicealertstimer[id]=time.time()
-                        alert_added=True
-                        alertservices[host][service_name].update(service_attributes)
-            log.debug(json.dumps(self.servicealertstimer,indent=4))
-            log.debug("Following services will be alerted")
-            log.debug(json.dumps(alertservices,indent=4))
 
+            #count messages
+            count_all_services=len(self.messages)
+            #get messages which are unavailable
+            offline_count,offline_services=self.messages.getUnavailableAsDict()
+            #get friendly hostnames from config
+            hosts_fn=self.getHostsfriendlyname()
+            #get messages for alert
+            alerts_count_for_email,alertservices=self.messages.getAlertMessagesAsDict(alert_lifetime=self.config.alert_lifetime)
+
+            log.debug("Number of services checked %d" % count_all_services)
+            log.debug("Services checked %s" % json.dumps(dict(self.messages),indent=4))
             log.info("Number of offline services: %d" % offline_count)
+            log.debug("Offline services: %s" % offline_services)
 
-            if alert_added:
+            if alertservices:
                 log.info("Number of Alert found %d " % alerts_count_for_email)
                 badservice_html=generateStatusHtmlPage(path=self.template_path,
                                                        host=self.host,

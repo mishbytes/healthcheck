@@ -1,4 +1,7 @@
 import json
+import hashlib
+import logging
+import time
 
 class Message(object):
     def __init__(self,json_object):
@@ -20,11 +23,10 @@ class Message(object):
                 #depth 1 is service name
                 for name,value in service.iteritems():
                     self.name=name
+                    self.service_id=hashlib.md5(host + name).hexdigest()
                     for property in value:
                         #depth 2
-                        if "SERVICE_ID" == property.upper():
-                            self.service_id=value[property]
-                        elif "AVAILABLE" == property.upper():
+                        if "AVAILABLE" == property.upper():
                             self.available=value[property]
                         elif "RETURN_CODE" == property.upper():
                             self.return_code=value[property]
@@ -34,6 +36,7 @@ class Message(object):
                             self.message=value[property]
                         elif "TYPE" == property.upper():
                             self.type=value[property]
+
         else:
             raise ValueError('Non-dictionary value not allowed')
 
@@ -73,14 +76,62 @@ class Message(object):
 class Messages(object):
     def __init__(self):
         self.messages=[]
+        self.messages_to_alert={}
+        self.messages_alert_timer={}
 
     def add(self,message):
-        self.messages.append(message)
+        self.messages.append(Message(message))
 
     def getMessages(self):
         return self.messages
 
+    def reset(self):
+        self.messages=[]
+        self.messages_to_alert=[]
 
+    def getUnavailableAsDict(self):
+        unavailable_dict={}
+        unavailable_count=0
+        for message in self.messages:
+            if not message.available:
+                unavailable_count+=1
+                unavailable_dict.update(dict(message))
+        return unavailable_count,unavailable_dict
+
+    def getAlertMessagesAsDict(self,alert_lifetime=7200):
+        log = logging.getLogger('messages.getAlertMessagesAsDict()')
+        alert_messages={}
+        alert_count=0
+        alert_found=True
+        for message in self.messages:
+            if not message.available:
+                if message.service_id in self.messages_alert_timer:
+                    last_alert_time=self.messages_alert_timer[message.service_id]
+                    age_of_last_alert=time.time() - last_alert_time
+                    if age_of_last_alert > alert_lifetime:
+                        log.debug("Age of Alert for service %s exceeded alert life time %s" % (message.name,alert_lifetime))
+                        log.debug("Add service to alert list %s" % message.name)
+                        alert_count+=1
+                        self.messages_alert_timer[message.service_id]=time.time()
+                        alert_found=True
+                        alert_messages.update(dict(message))
+                    else:
+                        log.debug("Last Alert for service %s not expired " % message.name)
+                else:
+                    log.debug("This first alert for service %s since agent start" % message.name)
+                    alert_count+=1
+                    self.messages_alert_timer[message.service_id]=time.time()
+                    alert_found=True
+                    alert_messages.update(dict(message))
+
+        log.debug(json.dumps(self.messages_alert_timer,indent=4))
+        log.debug("Following services will be alerted")
+        log.debug(json.dumps(alert_messages,indent=4))
+
+        return alert_count,alert_messages
+
+    def __len__(self):
+        return len(self.messages)
 
     def __str__(self):
         combined_messages={}
@@ -88,13 +139,14 @@ class Messages(object):
             combined_messages.update(dict(message))
         return json.dumps(combined_messages,indent=4)
 
+    #convert list of message objects to dictionary
     def __iter__(self):
         # first start by grabbing the Class items
         #iters = dict((x,y) for x,y in Messages.__dict__.items() if x[:2] != '__')
 
         iters={}
 
-        #combine all message objects
+        #combine all message objects as dict
         combined_messages={}
         for message in self.messages:
             combined_messages.update(dict(message))
@@ -104,6 +156,8 @@ class Messages(object):
         # now 'yield' through the items
         for x,y in iters.items():
             yield x,y
+
+
 
 if __name__ == '__main__':
     myjson={"testserver": {
@@ -129,11 +183,9 @@ if __name__ == '__main__':
                             }
               }
     try:
-        cls1=Message(myjson)
-        cls2=Message(myjson2)
         cls3=Messages()
-        cls3.add(cls1)
-        cls3.add(cls2)
+        cls3.add(myjson)
+        cls3.add(myjson2)
     except ValueError as e:
         print "cls1 not created: %s" % e
     else:
