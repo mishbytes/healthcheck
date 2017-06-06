@@ -95,11 +95,11 @@ def runsasserverstatus(scriptpath,default_timeout=30):
                         output_line = dict(match_dict.groupdict())
                         log.debug("    Regex groups: %s" % d)
                         if output_line['down_service_name']:
-                            service=d['down_service_name']
+                            service=output_line['down_service_name']
                             status=False
                             valid_response=True
                         elif output_line['up_service_name']:
-                            service=d['up_service_name']
+                            service=output_line['up_service_name']
                             status=True
                             valid_response=True
                         else:
