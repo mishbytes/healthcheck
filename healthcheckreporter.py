@@ -56,6 +56,7 @@ class HealthcheckReporter(threading.Thread):
             self.allservices=[]
             self.services_status={}
             self.servicealertstimer={}
+            self.responsetime=0
             #As this class is a thread, disable sys stdout and stderr
             sys.stdout = open('/dev/null', 'w')
             sys.stderr = open('/dev/null', 'w')
@@ -105,6 +106,7 @@ class HealthcheckReporter(threading.Thread):
             log.debug("After adding service: services_status %s" % json.dumps(self.services_status,indent=4))
 
         def start(self):
+            self.responsetime=0
             if self.start_event:
                 self.running=True
                 log = logging.getLogger('Healthcheck.start()')
@@ -117,7 +119,10 @@ class HealthcheckReporter(threading.Thread):
                             log.debug("Environment: %s Application: %s Hosts: %s" % (self.config.env_name,
                                                                                      service.service,service.hosts.keys()))
                             self.last_service=service
+                            start_time=time.time()
                             service.getStatus()
+                            elapsed=time.time()-start_time
+                            self.responsetime+=elapsed
                             log.debug("Status Response" % service.status)
                             self.add(service.status)
                         log.debug("** Status check ends **")
@@ -232,7 +237,8 @@ class HealthcheckReporter(threading.Thread):
                                                        total_services_unavailable=offline_count,
                                                        alerts_count_for_email=alerts_count_for_email,
                                                        hosts_friendlyname=hosts_fn,
-                                                       services_status=alertservices
+                                                       services_status=alertservices,
+                                                       reporter_responsetime=self.responsetime
                                                        )
                 log.debug("HTML Output")
                 log.debug(badservice_html)

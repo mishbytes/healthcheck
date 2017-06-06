@@ -43,7 +43,7 @@ def runsasserverstatus(scriptpath,default_timeout=30):
 
     collect_status={}
 
-
+    ignore_services=["SAS Environment Manager Server"]
 
     #When using .* expression Python 2.6 throws nothing to repeat error
     #Replace .* with .+
@@ -77,17 +77,28 @@ def runsasserverstatus(scriptpath,default_timeout=30):
                 log.debug(result)
                 collect_status={}
                 for response in result.split('\n'):
+                    ignore_response=False
                     log.debug("    %s" % response)
+                    for ignore_service in ignore_services:
+                        if ignore_service in response:
+                            log.debug("List of services to be ignored from report %s" % ignore_services)
+                            log.debug("Response: %s" % response)
+                            log.debug("Response ignored as it contains service which is in ignore list")
+                            ignore_response=True
+
+                    if ignore_response:
+                        #do not proceed further if response is in ignore list
+                        continue
+
                     match_dict = format_pat.match(response)
                     if match_dict:
-
-                        d = dict(match_dict.groupdict())
+                        output_line = dict(match_dict.groupdict())
                         log.debug("    Regex groups: %s" % d)
-                        if d['down_service_name']:
+                        if output_line['down_service_name']:
                             service=d['down_service_name']
                             status=False
                             valid_response=True
-                        elif d['up_service_name']:
+                        elif output_line['up_service_name']:
                             service=d['up_service_name']
                             status=True
                             valid_response=True

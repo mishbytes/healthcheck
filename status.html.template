@@ -114,13 +114,13 @@
               text-align: left;">
 <tr >
         <td >
-        Total Services Checked
+        Services Checked
         </td>
         <td align="right">{{ total_services }}</td>
   </tr>
   <tr >
         <td >
-        Total Services Unavailable
+        Services Unavailable
         </td>
         <td align="right">{{ total_services_unavailable }}</td>
   </tr>

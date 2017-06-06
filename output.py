@@ -17,7 +17,8 @@ def generateStatusHtmlPage(path='/tmp',host='',time='',
                            total_services_unavailable=0,
                            alerts_count_for_email=0,
                            hosts_friendlyname={},
-                           services_status={}):
+                           services_status={},
+                           reporter_responsetime=0):
     log = logging.getLogger('output.generateStatusHtmlPage()')
     fname = path + '/' + "status.html"
 
@@ -28,7 +29,7 @@ def generateStatusHtmlPage(path='/tmp',host='',time='',
         'total_services_unavailable':total_services_unavailable,
         'alerts_count_for_email':alerts_count_for_email,
         'hosts_friendlyname':hosts_friendlyname,
-        'report_title':'Health Check Report Executed from %s at %s' % (host,time)
+        'report_title':'Health Check Report Executed on %s took %s' % (host,reporter_responsetime)
     }
     log.debug("jinja2 context %s" % json.dumps(context,indent=4))
     #
