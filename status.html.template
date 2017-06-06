@@ -170,14 +170,14 @@
                           style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
                           Status
                       </td>
-                      <td width="8%" height="30" align="center"
+                      <td width="10%" height="30" align="center"
                           style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
                           Last Checked
                         </h2>
                       </td>
-                      <td width="35%" height="30" align="center"
+                      <td width="40%" height="30" align="center"
                           style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
-                          Additional Information
+                          Response
                         </h2>
                       </td>
                 </tr>

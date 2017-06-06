@@ -50,6 +50,8 @@ def runsasserverstatus(scriptpath,default_timeout=30):
     format_pat= re.compile(
                             r'(?:(?P<down_service_name>.+)(?=(.+)?\sis\sNOT\sup(.+)?$))?'
                             r'(?:(?P<up_service_name>.+)(?=(.+)?\sis\sUP(.+)?$))?'
+                            r'(?:(?P<started_service_name>.+)(?=(.+)?\sis\sstarted(.+)?$))?'
+                            r'(?:(?P<stopped_service_name>.+)(?=(.+)?\sis\sstopped(.+)?$))?'
                       )
     #format_pat= re.compile(
     #                        r'(?:(?P<down_service_name>.*)(?=.*\sis\sNOT\sup.*$))?'
@@ -102,6 +104,14 @@ def runsasserverstatus(scriptpath,default_timeout=30):
                             service=output_line['up_service_name']
                             status=True
                             valid_response=True
+                        elif output_line['started_service_name']:
+                            service=output_line['started_service_name']
+                            status=True
+                            valid_response=True
+                        elif output_line['stopped_service_name']:
+                            service=output_line['stopped_service_name']
+                            status=True
+                            valid_response=True
                         else:
                             #reject response and go back to main loop
                             continue
@@ -119,7 +129,7 @@ def runsasserverstatus(scriptpath,default_timeout=30):
                             collect_status[service]={}
                         collect_status[service]=output_status
                     else:
-                        log.debug("Unable to find match for \"is UP\" or \"is NOT up\" in sas.servers status command output")
+                        log.debug("Unable to find match for \"is UP\" or \"is NOT up\" or \"is started\" or \"is stopped\" in sas.servers status command output")
                         log.debug("sas.servers command output %s" % response)
             else:
                 #capture message as it may be an error message
