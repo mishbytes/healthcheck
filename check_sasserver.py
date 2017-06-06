@@ -196,8 +196,8 @@ def getsasserverstatus(environment,hosts_list,username,scriptpath,private_key=''
                         hide('everything'),
                         key_filename=private_key,
                         user = username,
-                        keepalive=10,
-                        timeout=30
+                        keepalive=60,
+                        timeout=60
                       ):
             log.debug(">> BEGIN: Environment: %s Command: %s check" %(environment,scriptpath))
             sasserverstatus_output = tasks.execute(runsasserverstatus,scriptpath)
