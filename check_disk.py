@@ -60,19 +60,20 @@ def diskStatus(mount,default_timeout=30):
         except CommandTimeout as connerr:
             message="Disk %s did not respond" % mount
             log.debug("Disk %s did not respond %s" % (mount,connerr))
+            log.exception(connerr)
         except NetworkError as neterr:
             message="Unable to connect to %s" % (env.host_string)
             log.debug("Unable to connect to %s" % (env.host_string))
-            log.debug(neterr)
+            log.exception(neterr)
         except SystemExit as syserror:
             log.debug("Error-code while establising ssh connection is non-zero: %s" % str(syserror))
             #status=False
         except IOError as ioerr:
             message=str(ioerr)
-            log.exception("Command failed with error %s" % (ioerr))
+            log.exception(ioerr)
         except Exception as err:
             message="Unknown Error occurred in diskStatus()"
-            log.debug("Unknown Error occurred in diskStatus() %s" % (err))
+            log.exception(err)
 
     service_id=hashlib.md5(env.host_string + mount).hexdigest()
     last_checked=str(datetime.now())
@@ -109,8 +110,8 @@ def getDiskStatus(environment,hosts_list,username,mountpath,private_key='',debug
                         hide('everything'),
                         key_filename=private_key,
                         user = username,
-                        keepalive=30,
-                        timeout=30
+                        keepalive=60,
+                        timeout=60
                       ):
             log.debug(">> BEGIN: Environment: %s Disk: %s check" %(environment,mountpath))
             disk_output = tasks.execute(diskStatus,mountpath)
