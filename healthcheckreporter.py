@@ -83,7 +83,7 @@ class HealthcheckReporter(threading.Thread):
 
         def start(self):
             self.responsetime=0
-            #Empty messages before checking every service
+            #Discard old messages
             self.messages.reset()
             if self.start_event:
                 self.running=True
