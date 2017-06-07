@@ -135,7 +135,6 @@ def runsasserverstatus(scriptpath,default_timeout=30):
             else:
                 #capture message as it may be an error message
                 message=result
-                valid_response=True
 
 
         except CommandTimeout as connerr:
