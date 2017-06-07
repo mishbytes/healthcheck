@@ -125,7 +125,8 @@ class Messages(object):
                     alert_messages.update(dict(message))
             else:
                 #if service is in alert timer and is available remove it from alert timer
-                del self.messages_alert_timer[message.service_id]
+                if message.service_id in self.messages_alert_timer:
+                    del self.messages_alert_timer[message.service_id]
 
 
         log.debug(json.dumps(self.messages_alert_timer,indent=4))
