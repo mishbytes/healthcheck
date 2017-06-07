@@ -5,6 +5,7 @@ import time
 
 class Message(object):
     def __init__(self,json_object):
+        log = logging.getLogger('messages.Message.__init__')
         self.host="unknown"
         self.name="unknown"
         self.service_id="unknown"
@@ -16,29 +17,33 @@ class Message(object):
         #if isJson(message_json):
             #convert json string to json dict
         #json_object = json.loads(message_json)
-        if isinstance(json_object, dict):
-            for host,service in json_object.iteritems():
-                #depth 0 is hosts
-                self.host=host
-                #depth 1 is service name
-                for name,value in service.iteritems():
-                    self.name=name
-                    self.service_id=hashlib.md5(host + name).hexdigest()
-                    for property in value:
-                        #depth 2
-                        if "AVAILABLE" == property.upper():
-                            self.available=value[property]
-                        elif "RETURN_CODE" == property.upper():
-                            self.return_code=value[property]
-                        elif "LAST_CHECKED" == property.upper():
-                            self.last_checked=value[property]
-                        elif "MESSAGE" == property.upper():
-                            self.message=value[property]
-                        elif "TYPE" == property.upper():
-                            self.type=value[property]
+        try:
+            if isinstance(json_object, dict):
+                for host,service in json_object.iteritems():
+                    #depth 0 is hosts
+                    self.host=host
+                    #depth 1 is service name
+                    for name,value in service.iteritems():
+                        self.name=name
+                        self.service_id=hashlib.md5(host + name).hexdigest()
+                        for property in value:
+                            #depth 2
+                            if "AVAILABLE" == property.upper():
+                                self.available=value[property]
+                            elif "RETURN_CODE" == property.upper():
+                                self.return_code=value[property]
+                            elif "LAST_CHECKED" == property.upper():
+                                self.last_checked=value[property]
+                            elif "MESSAGE" == property.upper():
+                                self.message=value[property]
+                            elif "TYPE" == property.upper():
+                                self.type=value[property]
 
-        else:
-            raise ValueError('Non-dictionary value not allowed')
+            else:
+                raise ValueError('Non-dictionary value not allowed')
+        except AttributeError as atterr:
+            log.exception(atterr)
+            #raise AttributeError
 
 
     def __add__(self,new):
@@ -79,15 +84,50 @@ class Messages(object):
         self.messages_to_alert={}
         self.messages_alert_timer={}
 
-    def add(self,message):
-        self.messages.append(Message(message))
-
-    def getMessages(self):
-        return self.messages
 
     def reset(self):
         self.messages=[]
         self.messages_to_alert=[]
+
+    def add(self,message):
+            for host,service_messages in message.iteritems():
+                #to create unique message when input contains messages from multiple host
+                if len(service_messages) > 1:
+                    for service,value in service_messages.iteritems():
+                        self.messages.append(Message({host:{service:value}}))
+                        #print dict(Message({host:{service:value}}))
+                else:
+                    self.messages.append(Message({host:service_messages}))
+
+    def __len__(self):
+        return len(self.messages)
+
+    def __str__(self):
+        return json.dumps(dict(self),indent=6)
+
+    #convert list of message objects to dictionary
+    def __iter__(self):
+        iters={}
+
+        #combine all message objects as dict
+        combined_messages={}
+        for message in self.messages:
+            if message.host in combined_messages:
+                if not message.name in combined_messages[message.host]:
+                    combined_messages[message.host][message.name]={}
+                combined_messages[message.host][message.name]=dict(message)[message.host][message.name]
+            else:
+                combined_messages.update(dict(message))
+
+        # then update the class items with the instance items
+        iters.update(combined_messages)
+        # now 'yield' through the items
+        for x,y in iters.items():
+            yield x,y
+
+
+    def getMessages(self):
+        return self.messages
 
     def getUnavailableAsDict(self):
         unavailable_dict={}
@@ -135,36 +175,11 @@ class Messages(object):
 
         return alert_count,alert_messages
 
-    def __len__(self):
-        return len(self.messages)
-
-    def __str__(self):
-        combined_messages={}
-        for message in self.messages:
-            combined_messages.update(dict(message))
-        return json.dumps(combined_messages,indent=4)
-
-    #convert list of message objects to dictionary
-    def __iter__(self):
-        # first start by grabbing the Class items
-        #iters = dict((x,y) for x,y in Messages.__dict__.items() if x[:2] != '__')
-
-        iters={}
-
-        #combine all message objects as dict
-        combined_messages={}
-        for message in self.messages:
-            combined_messages.update(dict(message))
-
-        # then update the class items with the instance items
-        iters.update(combined_messages)
-        # now 'yield' through the items
-        for x,y in iters.items():
-            yield x,y
 
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     myjson={"testserver": {
                                "SASStudio": {
                                                "available": False,
@@ -173,26 +188,43 @@ if __name__ == '__main__':
                                                "service_id": "3e460a2bbbe7f0f29b13c7d910959fd3",
                                                "message": "[Errno 8] nodename nor servname provided, or not known",
                                                "type": "webapp"
-                                             }
-                            }
-              }
-    myjson2={"testserver2": {
-                               "SASStudio": {
-                                               "available": False,
+                                             },
+                               "SASStudio2": {
+                                               "available": True,
                                                "return_code": 300,
                                                "last_checked": "2017-06-05 11:56:42.181631",
                                                "service_id": "3e460a2bbbe7f0f29b13c7d910959fd3",
                                                "message": "[Errno 8] nodename nor servname provided, or not known",
                                                "type": "webapp"
                                              }
-                            }
+
+                            },
+            "testserver3": {
+                                       "SASStudio": {
+                                                       "available": False,
+                                                       "return_code": 300,
+                                                       "last_checked": "2017-06-05 11:56:42.181631",
+                                                       "service_id": "3e460a2bbbe7f0f29b13c7d910959fd3",
+                                                       "message": "[Errno 8] nodename nor servname provided, or not known",
+                                                       "type": "webapp"
+                                                     },
+                                       "SASStudio2": {
+                                                       "available": True,
+                                                       "return_code": 300,
+                                                       "last_checked": "2017-06-05 11:56:42.181631",
+                                                       "service_id": "3e460a2bbbe7f0f29b13c7d910959fd3",
+                                                       "message": "[Errno 8] nodename nor servname provided, or not known",
+                                                       "type": "webapp"
+                                                     }
+
+                                    }
               }
+
     try:
         cls3=Messages()
         cls3.add(myjson)
-        cls3.add(myjson2)
     except ValueError as e:
-        print "cls1 not created: %s" % e
+        print "cls3 not created: %s" % e
     else:
         #print "cls1 created"
         #print dict(cls1)

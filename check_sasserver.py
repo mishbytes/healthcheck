@@ -114,6 +114,7 @@ def runsasserverstatus(scriptpath,default_timeout=30):
                             valid_response=True
                         else:
                             #reject response and go back to main loop
+                            message=response
                             continue
                         message=response.rstrip("\n\r")
                         service_id=hashlib.md5(env.host_string + service).hexdigest()
