@@ -36,7 +36,7 @@ env.keepalive=10
 #errors on the remote end
 env.warn_only=True
 
-def runsasserverstatus(scriptpath,default_timeout=30):
+def runsasserverstatus(environment,scriptpath,default_timeout=30):
     #log.info(env.hosts)
     log = logging.getLogger('runsasserverstatus()')
 
@@ -124,7 +124,8 @@ def runsasserverstatus(scriptpath,default_timeout=30):
                                 "message":message,
                                 "type":"sasserver.sh",
                                 "service_id":service_id,
-                                "last_checked":last_checked
+                                "last_checked":last_checked,
+                                "environment":environment
                                 }
                         if not service in collect_status:
                             collect_status[service]={}
@@ -166,7 +167,8 @@ def runsasserverstatus(scriptpath,default_timeout=30):
                 "message":message,
                 "type":"sasserver.sh",
                 "service_id":service_id,
-                "last_checked":last_checked
+                "last_checked":last_checked,
+                "environment":environment
                 }
         if not scriptpath in collect_status:
             collect_status[scriptpath]={}
@@ -200,7 +202,7 @@ def getsasserverstatus(environment,hosts_list,username,scriptpath,private_key=''
                         timeout=60
                       ):
             log.debug(">> BEGIN: Environment: %s Command: %s check" %(environment,scriptpath))
-            sasserverstatus_output = tasks.execute(runsasserverstatus,scriptpath)
+            sasserverstatus_output = tasks.execute(runsasserverstatus,environment,scriptpath)
             log.debug(sasserverstatus_output)
             log.debug(">> END: Environment: %s Command: %s check" %(environment,scriptpath))
             disconnect_all() # Call this when you are done, or get an ugly exception!

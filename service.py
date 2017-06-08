@@ -11,10 +11,21 @@ from check_disk import getDiskStatus
 log = logging.getLogger('Service')
 
 class Service(object):
-    def __init__(self,environment,level,service,type,hosts,port,protocol,user,password,debug=False,ssh_private_key_filename='~/.ssh/id_rsa'):
+    def __init__(self,
+                 environment_name,
+                 environment_level,
+                 service,
+                 type,
+                 hosts,
+                 port,
+                 protocol,
+                 user,
+                 password,
+                 debug=False,
+                 ssh_private_key_filename='~/.ssh/id_rsa'):
         self.type=type
-        self.environment=environment
-        self.level=environment
+        self.environment_name=environment_name
+        self.environment_level=environment_level
         self.service=service
         self.type=type
         self.hosts_list=[]
@@ -60,7 +71,7 @@ class Service(object):
             #log.debug("Checking WebApp: %s://%s:%s/%s" % (self.protocol,self.hosts,self.port,self.name))
             self.last_checked=str(datetime.now())
             log.debug("Get status for service %s" % self.service)
-            self.status=sasLogon(self.environment,
+            self.status=sasLogon(self.environment_name,
                               self.protocol,
                               self.hosts_str,
                               self.port,
@@ -73,7 +84,7 @@ class Service(object):
         elif self.type.upper() == 'DISK':
             log.debug("Checking Disk")
             self.last_checked=str(datetime.now())
-            self.status=getDiskStatus(self.environment,
+            self.status=getDiskStatus(self.environment_name,
                                    self.hosts_list,
                                    self.user,
                                    self.service,
@@ -84,7 +95,7 @@ class Service(object):
         elif self.type.upper() == 'SAS.SERVERS':
             log.debug("Checking SAS.SERVERS")
             self.last_checked=str(datetime.now())
-            self.status=getsasserverstatus(self.environment,
+            self.status=getsasserverstatus(self.environment_name,
                                    self.hosts_list,
                                    self.user,
                                    self.service,

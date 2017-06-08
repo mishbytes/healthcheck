@@ -14,6 +14,7 @@ class Message(object):
         self.last_checked="unknown"
         self.message="unknown"
         self.type="unknown"
+        self.environment="unknown"
         #if isJson(message_json):
             #convert json string to json dict
         #json_object = json.loads(message_json)
@@ -37,6 +38,8 @@ class Message(object):
                             elif "MESSAGE" == property.upper():
                                 self.message=value[property]
                             elif "TYPE" == property.upper():
+                                self.type=value[property]
+                            elif "ENVIRONMENT" == property.upper():
                                 self.type=value[property]
 
             else:
@@ -69,6 +72,7 @@ class Message(object):
                                           "last_checked":self.last_checked,
                                           "message":self.message,
                                           "type":self.type,
+                                          "environment":self.environment
 
                                           }
                                }
@@ -214,7 +218,8 @@ if __name__ == '__main__':
                                                        "last_checked": "2017-06-05 11:56:42.181631",
                                                        "service_id": "3e460a2bbbe7f0f29b13c7d910959fd3",
                                                        "message": "[Errno 8] nodename nor servname provided, or not known",
-                                                       "type": "webapp"
+                                                       "type": "webapp",
+                                                       "environment":"unknown"
                                                      }
 
                                     }

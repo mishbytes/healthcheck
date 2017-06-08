@@ -33,7 +33,7 @@ env.timeout=30
 #errors on the remote end
 env.warn_only=True
 
-def diskStatus(mount,default_timeout=30):
+def diskStatus(environment,mount,default_timeout=30):
     #log.info(env.hosts)
     log = logging.getLogger('diskStatus()')
     status=False
@@ -82,7 +82,8 @@ def diskStatus(mount,default_timeout=30):
             "message":message,
             "type":"disk",
             "service_id":service_id,
-            "last_checked":last_checked
+            "last_checked":last_checked,
+            "environment":environment
             }
     _status={mount:output}
     return _status
@@ -114,7 +115,7 @@ def getDiskStatus(environment,hosts_list,username,mountpath,private_key='',debug
                         timeout=60
                       ):
             log.debug(">> BEGIN: Environment: %s Disk: %s check" %(environment,mountpath))
-            disk_output = tasks.execute(diskStatus,mountpath)
+            disk_output = tasks.execute(diskStatus,environment,mountpath)
             log.debug(">> END: Environment: %s Disk: %s check" %(environment,mountpath))
             disconnect_all() # Call this when you are done, or get an ugly exception!
 

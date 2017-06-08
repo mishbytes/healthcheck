@@ -38,14 +38,14 @@ class HealthCheckConfigStore(object):
         self.checkonly=configcheck
         self.logfile='logfile.log'
         self.enabled=False
-        self.smtp_host='Unknown'
+        self.smtp_host='unknown'
         self.smtp_port=25
-        self.smtp_user='Unknown'
+        self.smtp_user='unknown'
         self.smpt_password=''
-        self.smtp_sender='Unknown'
-        self.smtp_receiver='Unknown'
-        self.env_name='Unknown'
-        self.env_level='Unknown'
+        self.smtp_sender='unknown'
+        self.smtp_receiver='unknown'
+        self.env_name=""
+        self.env_level='unknown'
         self.interval=0
         self.frequency=0
         self.valid=False
@@ -166,10 +166,20 @@ class HealthCheckConfigStore(object):
                     else:
                         debug=False
 
+                    if "ENVIRONMENT" in service_upper_case:
+                        environment_name=services["environment"]
+                    else:
+                        environment_name="unknown"
+
+                    if "LEVEL" in service_upper_case:
+                        environment_level=services["level"]
+                    else:
+                        environment_level="unknown"
+
                     if  service_enabled:
                         for service in services['service']:
-                            self.services.append(Service(self.env_name,
-                                                     self.env_level,
+                            self.services.append(Service(environment_name,
+                                                     environment_level,
                                                      service,
                                                      services['type'],
                                                      services['hosts'],

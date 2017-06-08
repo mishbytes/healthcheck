@@ -129,7 +129,8 @@ def sasLogon(environment,protocol,host,port,application,user,password,debug=Fals
             "message":message,
             "type":"webapp",
             "service_id":service_id,
-            "last_checked":last_checked
+            "last_checked":last_checked,
+            "environment":environment
             }
     _status={host:{application:output}}
     log.debug("Status of %s: %s" % (application,_status))
