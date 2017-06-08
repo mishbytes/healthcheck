@@ -193,12 +193,12 @@
         <tr>
           {% if vars.first_row %}
             <td rowspan="{{ each_host_services_count }}"
-                width="8%" height="25" align="center"
+                width="12%" height="25" align="center"
                 style="border-left:#818181 solid 1px;border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
                 {{ hosts_friendlyname[host]}}
             </td>
             <td rowspan="{{ each_host_services_count }}"
-                width="11%" height="25" align="center"
+                width="15%" height="25" align="center"
                 style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
                 {{ host }}
             </td>
@@ -208,11 +208,11 @@
               style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
               {{ service_name }}
           </td>
-          <td width="8%" height="25" align="center"
+          <td width="7%" height="25" align="center"
              style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
              {{ service_values['type'] }}
           </td>
-          <td width="8%" height="25" align="center"
+          <td width="7%" height="25" align="center"
              style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
              {{ service_values['environment'] }}
           </td>
@@ -227,7 +227,7 @@
                 Not Available
             </td>
           {% endif %}
-          <td width="10%" height="25" align="center"
+          <td width="11%" height="25" align="center"
               style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
               {{ service_values['last_checked'] }}
           </td>

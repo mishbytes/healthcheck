@@ -40,7 +40,7 @@ class Message(object):
                             elif "TYPE" == property.upper():
                                 self.type=value[property]
                             elif "ENVIRONMENT" == property.upper():
-                                self.type=value[property]
+                                self.environment=value[property]
 
             else:
                 raise ValueError('Non-dictionary value not allowed')
