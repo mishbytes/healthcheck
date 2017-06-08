@@ -4,7 +4,7 @@
 "enabled":"yes",
 "interval":120,
 "frequency":1,
-"log":"/var/log/agent.log",
+"log":"/data/projects/sas/healthcheck/githubproject/mylogfile.log",
 "env_name":"Dev",
 "env_level":"Lev2",
 "alert_lifetime":7200,
@@ -15,6 +15,7 @@
 "verbose":"yes",
 "services":[
             {
+              "environment":"Dev Lev2",
               "type":"webapp",
               "description":"Dev environment web check",
               "protocol":"https",
@@ -27,66 +28,69 @@
               "debug":"No"
             },
             {
+              "environment":"Dev Lev2",
               "type":"disk",
               "description":"Dev environment disk check",
               "protocol":"ssh",
               "hosts":{
-                       "metadataserver1.local.domain.com":"SAS Metadata Server node 1",
-                       "metadataserver2.local.domain.com":"SAS Metadata Server node 2",
-                       "metadataserver3.local.domain.com":"SAS Metadata Server node 3",
-                       "gridserver1.local.domain.com":"SAS Grid node 1"
+                       "testserver":"SAS Metadata Server node 1",
+                       "192.168.56.202":"SAS Metadata Server node 2",
+                       "192.168.56.203":"SAS Grid node 1"
                      },
               "port":22,
-              "ssh_id_rsa_filename":"~/ssh_keys/id_rsa",
-              "service":["/sashome","/tmp"],
+              "ssh_id_rsa_filename":"/vagrant/va73_dist/ssh_keys/id_rsa",
+              "service":["/opt2","/tmp"],
               "user":"sas",
               "password":"password",
               "enabled":"no",
               "debug":"no"
           },
           {
+            "environment":"Dev Lev2",
             "type":"sas.servers",
             "description":"Dev environment sasserver.sh check",
             "protocol":"ssh",
             "hosts":{
-                     "metadataserver1.local.domain.com":"SAS Metadata Server node 1"
+                     "192.168.56.201":"SAS Metadata Server node 1"
                    },
             "port":22,
             "ssh_id_rsa_filename":"/vagrant/va73_dist/ssh_keys/id_rsa",
-            "service":["/sasconfig/Meta1/Lev1/sas.servers"],
+            "service":["/tmp/sasserver.sh"],
             "user":"sas",
             "password":"password",
-            "enabled":"yes",
+            "enabled":"no",
             "debug":"no"
         },
         {
+          "environment":"Dev Lev2",
           "type":"sas.servers",
           "description":"Dev environment sasserver.sh check",
           "protocol":"ssh",
           "hosts":{
-                   "metadataserver2.local.domain.com":"SAS Metadata Server node 2"
+                   "192.168.56.202":"SAS Metadata Server node 2"
                  },
           "port":22,
           "ssh_id_rsa_filename":"/vagrant/va73_dist/ssh_keys/id_rsa",
-          "service":["/sasconfig/Meta2/Lev1/sas.servers"],
+          "service":["/tmp/sasserver.sh"],
           "user":"sas",
           "password":"password",
-          "enabled":"yes",
+          "enabled":"no",
           "debug":"no"
       },
       {
+        "environment":"Dev Lev2",
         "type":"sas.servers",
         "description":"Dev environment sasserver.sh check",
         "protocol":"ssh",
         "hosts":{
-                "gridserver1.local.domain.com":"SAS Grid node 1"
+                 "192.168.56.203":"SAS Grid Server node 2"
                },
         "port":22,
-        "ssh_id_rsa_filename":"~/ssh_keys/id_rsa",
-        "service":["/sasconfig/Comp/Lev1/sas.servers"],
+        "ssh_id_rsa_filename":"/vagrant/va73_dist/ssh_keys/id_rsa",
+        "service":["/tmp/sasserver.sh"],
         "user":"sas",
         "password":"password",
-        "enabled":"yes",
+        "enabled":"no",
         "debug":"no"
      }
      ]
