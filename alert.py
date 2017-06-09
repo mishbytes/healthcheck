@@ -37,7 +37,7 @@ def email(config,content):
             msg = MIMEMultipart('alternative')
             msg['Subject'] = config.email_subject
             msg['From'] = config.smtp_sender
-            msg['To'] = config.smtp_receiver
+            msg['To'] = ", ".join(config.smtp_receiver)
             html_content=""
 
 

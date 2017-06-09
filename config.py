@@ -20,7 +20,7 @@ class HealthCheckConfig(object):
         self.smtp_user='unknown'
         self.smpt_password=''
         self.smtp_sender='unknown'
-        self.smtp_receiver='unknown'
+        self.smtp_receiver=[]
         self.env_name=""
         self.env_level='unknown'
         self.interval=0
