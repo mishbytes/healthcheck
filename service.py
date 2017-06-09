@@ -14,6 +14,7 @@ class Service(object):
     def __init__(self,
                  environment_name,
                  environment_level,
+                 group,
                  service,
                  type,
                  hosts,
@@ -25,7 +26,8 @@ class Service(object):
                  ssh_private_key_filename='~/.ssh/id_rsa'):
         self.type=type
         self.environment_name=environment_name
-        self.environment_level=environment_level
+        self.environment_level=environment_level,
+        self.group=group
         self.service=service
         self.type=type
         self.hosts_list=[]
@@ -72,35 +74,38 @@ class Service(object):
             self.last_checked=str(datetime.now())
             log.debug("Get status for service %s" % self.service)
             self.status=sasLogon(self.environment_name,
-                              self.protocol,
-                              self.hosts_str,
-                              self.port,
-                              self.service,
-                              self.user,
-                              self.password,
-                              debug=self.debug_boolean)
+                                 self.group,
+                                 self.protocol,
+                                 self.hosts_str,
+                                 self.port,
+                                 self.service,
+                                 self.user,
+                                 self.password,
+                                 debug=self.debug_boolean)
             log.debug("Response from service %s type %s is %s " % (self.service,self.type.upper(),self.status))
             self.checked=True
         elif self.type.upper() == 'DISK':
             log.debug("Checking Disk")
             self.last_checked=str(datetime.now())
             self.status=getDiskStatus(self.environment_name,
-                                   self.hosts_list,
-                                   self.user,
-                                   self.service,
-                                   private_key=self.ssh_private_key_filename,
-                                   debug=self.debug_boolean)
+                                      self.group,
+                                      self.hosts_list,
+                                      self.user,
+                                      self.service,
+                                      private_key=self.ssh_private_key_filename,
+                                      debug=self.debug_boolean)
             log.debug("Response from service %s type %s is %s " % (self.service,self.type.upper(),self.status))
             self.checked=True
         elif self.type.upper() == 'SAS.SERVERS':
             log.debug("Checking SAS.SERVERS")
             self.last_checked=str(datetime.now())
             self.status=getsasserverstatus(self.environment_name,
-                                   self.hosts_list,
-                                   self.user,
-                                   self.service,
-                                   private_key=self.ssh_private_key_filename,
-                                   debug=self.debug_boolean)
+                                           self.group,
+                                           self.hosts_list,
+                                           self.user,
+                                           self.service,
+                                           private_key=self.ssh_private_key_filename,
+                                           debug=self.debug_boolean)
             log.debug("Response from service %s type %s is %s " % (self.service,self.type.upper(),self.status))
             self.checked=True
         else:

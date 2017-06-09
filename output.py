@@ -11,6 +11,22 @@ def render_template(context,template_dir='/tmp',template_filename='status.html.t
         trim_blocks=False)
     return TEMPLATE_ENVIRONMENT.get_template(template_filename).render(context)
 
+def createSummaryHTML(template_path,
+                      status):
+    summary_html=""
+    log = logging.getLogger('output.createSummaryHTML()')
+    log.debug("%s" % status)
+    jinja2_context={'environment':'FCST UAT',
+                    'summary':status}
+    log.debug("jinja2 context %s" % json.dumps(jinja2_context,indent=4))
+    try:
+        summary_html = render_template(jinja2_context,template_dir=template_path,template_filename='summary.html.template')
+    except Exception as e:
+        log.error("Error occurred while generating HTML")
+        log.exception(e)
+        return None
+    log.debug("HTML Output: \n %s"  % summary_html)
+    return summary_html
 
 def generateStatusHtmlPage(path='/tmp',host='',time='',
                            total_services=0,
@@ -45,13 +61,3 @@ def generateStatusHtmlPage(path='/tmp',host='',time='',
         log.error("Error occurred while generating HTML")
         log.exception(e)
     return html
-
-
-#def main():
-#    generateStatusHtmlPage(path=os.path.dirname(os.path.abspath(__file__)))
-
-
-########################################
-
-#if __name__ == "__main__":
-#    main()

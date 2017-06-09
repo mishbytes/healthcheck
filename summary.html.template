@@ -1,0 +1,66 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title></title>
+</head>
+<body>
+
+<!--[if mso]>
+<left>
+<table><tr><td width="4000px">
+<![endif]-->
+
+<div style="max-width:500px;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin-bottom: 10px;
+            margin-left: 0px;
+            margin-right: 0px;
+            margin-top: 0px;
+            font-size: 12px;
+			vertical-align: baseline;
+			position: relative
+            ">
+<h2>{{ environment }}</h2>
+</div>
+<div style="max-width:500px;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin-bottom: 30px;
+            margin-left: 0px;
+            margin-right: 0px;
+            margin-top: 0px;
+            font-size: 12px;
+			      vertical-align: baseline;
+			      position: relative
+            ">
+
+<table style="background-clip: border-box;
+              background-color: #FFFFFF;
+              border-color: #818181;
+              border-width: 0px;
+              border-style: solid;
+              font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+              font-size: 14px;
+			        height: 30px;
+              font-variant-caps: normal;
+              font-weight: normal;
+              padding-bottom: 0px;
+              padding-left: 0px;
+              padding-right: 0px;
+              padding-top: 0px;
+              position: relative;
+              width: 100%;
+              text-align: left;">
+
+{% for group, status in summary.items() %}
+  <tr >
+         <td > {{group}}</td>
+         <td align="center" style="background-color:#00FF7F"> {{status['good']}} Good</td>
+         <td align="center" style="background-color:#FF3333" > {{status['bad']}} Bad</td>
+   </tr>
+{% endfor %}
+</table>
+</div>
+
+<!--[if mso]>
+</td></tr></table>
+</left>
+<![endif]-->
+</body></html>

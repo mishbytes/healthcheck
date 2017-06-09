@@ -10,7 +10,7 @@ from datetime import datetime
 
 log = logging.getLogger(__name__)
 
-def sasLogon(environment,protocol,host,port,application,user,password,debug=False):
+def sasLogon(environment,group,protocol,host,port,application,user,password,debug=False):
 
     log = logging.getLogger('check_sas.sasLogon()')
     log.debug("SAS Logon for WebApp: %s://%s:%s/%s initiated" % (protocol,host,port,application))
@@ -130,7 +130,8 @@ def sasLogon(environment,protocol,host,port,application,user,password,debug=Fals
             "type":"webapp",
             "service_id":service_id,
             "last_checked":last_checked,
-            "environment":environment
+            "environment":environment,
+            "group":group
             }
     _status={host:{application:output}}
     log.debug("Status of %s: %s" % (application,_status))

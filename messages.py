@@ -15,6 +15,7 @@ class Message(object):
         self.message="unknown"
         self.type="unknown"
         self.environment="unknown"
+        self.group="Others"
         #if isJson(message_json):
             #convert json string to json dict
         #json_object = json.loads(message_json)
@@ -41,6 +42,8 @@ class Message(object):
                                 self.type=value[property]
                             elif "ENVIRONMENT" == property.upper():
                                 self.environment=value[property]
+                            elif "GROUP" == property.upper():
+                                self.group=value[property]
 
             else:
                 raise ValueError('Non-dictionary value not allowed')
@@ -72,8 +75,8 @@ class Message(object):
                                           "last_checked":self.last_checked,
                                           "message":self.message,
                                           "type":self.type,
-                                          "environment":self.environment
-
+                                          "environment":self.environment,
+                                          "group":self.group
                                           }
                                }
                     })
@@ -142,6 +145,22 @@ class Messages(object):
                 unavailable_dict.update(dict(message))
         return unavailable_count,unavailable_dict
 
+    def getGoodAndBadStatusCountbyGroup(self):
+        log = logging.getLogger('messages.Messages.getGoodAndBadStatusCountbyGroup()')
+        output_dict={}
+        for message in self.messages:
+            if not message.group in output_dict:
+                output_dict[message.group]={}
+                output_dict[message.group]["bad"]=0
+                output_dict[message.group]["good"]=0
+            if not message.available:
+                output_dict[message.group]["bad"]+=1
+            else:
+                output_dict[message.group]["good"]+=1
+        log.debug("Health Summary:")
+        log.debug("%s" % json.dumps(output_dict))
+        return output_dict
+
     def getAlertMessagesAsDict(self,alert_lifetime=7200):
         log = logging.getLogger('messages.getAlertMessagesAsDict()')
         alert_messages={}
@@ -178,63 +197,3 @@ class Messages(object):
         log.debug(json.dumps(alert_messages,indent=4))
 
         return alert_count,alert_messages
-
-
-
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    myjson={"testserver": {
-                               "SASStudio": {
-                                               "available": False,
-                                               "return_code": 300,
-                                               "last_checked": "2017-06-05 11:56:42.181631",
-                                               "service_id": "3e460a2bbbe7f0f29b13c7d910959fd3",
-                                               "message": "[Errno 8] nodename nor servname provided, or not known",
-                                               "type": "webapp"
-                                             },
-                               "SASStudio2": {
-                                               "available": True,
-                                               "return_code": 300,
-                                               "last_checked": "2017-06-05 11:56:42.181631",
-                                               "service_id": "3e460a2bbbe7f0f29b13c7d910959fd3",
-                                               "message": "[Errno 8] nodename nor servname provided, or not known",
-                                               "type": "webapp"
-                                             }
-
-                            },
-            "testserver3": {
-                                       "SASStudio": {
-                                                       "available": False,
-                                                       "return_code": 300,
-                                                       "last_checked": "2017-06-05 11:56:42.181631",
-                                                       "service_id": "3e460a2bbbe7f0f29b13c7d910959fd3",
-                                                       "message": "[Errno 8] nodename nor servname provided, or not known",
-                                                       "type": "webapp"
-                                                     },
-                                       "SASStudio2": {
-                                                       "available": True,
-                                                       "return_code": 300,
-                                                       "last_checked": "2017-06-05 11:56:42.181631",
-                                                       "service_id": "3e460a2bbbe7f0f29b13c7d910959fd3",
-                                                       "message": "[Errno 8] nodename nor servname provided, or not known",
-                                                       "type": "webapp",
-                                                       "environment":"unknown"
-                                                     }
-
-                                    }
-              }
-
-    try:
-        cls3=Messages()
-        cls3.add(myjson)
-    except ValueError as e:
-        print "cls3 not created: %s" % e
-    else:
-        #print "cls1 created"
-        #print dict(cls1)
-        #print dict(cls2)
-        print json.dumps(dict(cls3),indent=6)
-
-
-    #print json.dumps(cls1)

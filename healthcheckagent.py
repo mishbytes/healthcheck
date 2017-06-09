@@ -8,9 +8,9 @@ from datetime import datetime
 #project
 from utils.pidfile import PidFile
 from utils.daemon import Daemon
-from config import healthcheckLogging
-from config import createLogfile
 from healthcheckreporter import HealthcheckReporter
+from healthchecklogging import HealthCheckLogging
+from healthchecklogging import createLog
 
 os.umask(022)
 
@@ -125,11 +125,11 @@ class HealthcheckAgent(Daemon):
                             log.info("HealthCheck finished at %s" % str(datetime.now()))
                             log.info("HealthCheck took %s seconds to complete" % total_time)
 
-                            log.info("Alert Check started at %s" % str(datetime.now()))
+                            log.info("Sending message started %s" % str(datetime.now()))
                             start_time=time.time()
-                            self.healthcheckreporter.alert()
+                            self.healthcheckreporter.send()
                             total_time=time.time()-start_time
-                            log.info("Alert Check finished at %s" % str(datetime.now()))
+                            log.info("Message sent at %s" % str(datetime.now()))
                             log.info("Alert Check took %s seconds to complete" % total_time)
 
                             self.healthcheckreporter.running=False
@@ -180,9 +180,9 @@ def main(argv):
 
     if command in COMMANDS_AGENT:
         #following line added for py 2.6
-        LOG_FILENAME=AGENT_DIR + '/' + DEFAULT_CONFIG_FILE
-        #Ensure agent can write to Log
-        createLogfile(LOG_FILENAME)
+        CONFIG_FILE=AGENT_DIR + '/' + DEFAULT_CONFIG_FILE
+        #initialize log
+        HealthCheckLogging(configfile=CONFIG_FILE)
         #Initialize Agent
         hcagent = HealthcheckAgent(PidFile(PID_NAME, PID_DIR).get_path())
 

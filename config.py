@@ -7,30 +7,7 @@ import sys
 #project
 from service import Service
 
-#constants
-DEFAUTL_LOGGING_LEVEL=logging.INFO
-
-def healthcheckLogging(default_level=logging.INFO,filename=None):
-    # Remove all handlers associated with the root logger object.
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)
-
-    if not filename == None:
-        try:
-            logging.basicConfig(filename=filename,level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        except (IOError, OSError) as e:
-            logging.basicConfig(level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            log.error(e)
-            sys.exit(2)
-    else:
-        logging.basicConfig(level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-
-healthcheckLogging(default_level=DEFAUTL_LOGGING_LEVEL)
-#global
-log = logging.getLogger(__name__)
-
-class HealthCheckConfigStore(object):
+class HealthCheckConfig(object):
 
     def __init__(self,configfile,configcheck=False):
         self.configfile=configfile
@@ -53,7 +30,7 @@ class HealthCheckConfigStore(object):
         self.email_subject='Email from HealthCheck'
         self.alert_lifetime=2*60*60 # 2 hours
         self.jinja2_template='status.html.template'
-        self.logging_level=DEFAUTL_LOGGING_LEVEL
+        self.logging_level=logging.INFO
         self.ssh_id_rsa_filename='~/.ssh/id_rsa'
         self.read()
 
@@ -72,15 +49,7 @@ class HealthCheckConfigStore(object):
         CONFIG_SERVICES_ALL_OPTIONS= CONFIG_SERVICES_GOLDEN_OPTIONS + CONFIG_SERVICES_OTHER_OPTIONS
 
         if self.checkonly:
-            #Configuration Check does not run as daemon, therefore its log can be sent to console
-            healthcheckLogging(default_level=self.logging_level)
             log.info("Configuration check only")
-        else:
-            with open(self.configfile) as f:
-                config=json.load(f)
-                f.close()
-            self.setLogOptions(config)
-            healthcheckLogging(default_level=self.logging_level,filename=self.logfile) #Write to log
 
         self.valid=self.validate(self.configfile)
 
@@ -100,6 +69,8 @@ class HealthCheckConfigStore(object):
                         elif 'VERBOSE' == config_key.upper():
                             if 'YES' == config[config_key].upper():
                                 self.logging_level=logging.DEBUG
+                            else:
+                                self.logging_level=logging.INFO
                         elif 'INTERVAL' == config_key.upper():
                             self.interval= config[config_key]
                         elif 'ALERT_LIFETIME' == config_key.upper():
@@ -176,10 +147,16 @@ class HealthCheckConfigStore(object):
                     else:
                         environment_level="unknown"
 
+                    if "GROUP" in service_upper_case:
+                        group=services["group"]
+                    else:
+                        group="Others"
+
                     if  service_enabled:
                         for service in services['service']:
                             self.services.append(Service(environment_name,
                                                      environment_level,
+                                                     group,
                                                      service,
                                                      services['type'],
                                                      services['hosts'],
@@ -258,51 +235,3 @@ class HealthCheckConfigStore(object):
                 except Exception,e:
                        log.error('Exception occurred while loading configuration json file %s' % (configfile))
                        log.error(e,exc_info=True)
-
-def createLogfile(configfile):
-    try:
-        with open(configfile) as f:
-            config=json.load(f)
-        if 'log' in config:
-            logfile=config['log']
-            if os.path.isfile(logfile):
-                if os.access(logfile, os.W_OK):
-                    sys.stdout.write('Log file %s \n' % logfile)
-                    healthcheckLogging(default_level=logging.INFO,filename=logfile)
-                else:
-                    sys.stdout.write('Write access to log %s denied\n' % logfile)
-                    sys.stdout.write('Exit\n')
-                    sys.exit(2)
-            else:
-                if not os.path.isdir(logfile):
-                    if os.path.isdir(os.path.dirname(os.path.abspath(logfile))):
-                        sys.stdout.write('Writing to log file %s \n' % logfile)
-                        #touch file
-                        with open(logfile, 'a'):
-                            os.utime(logfile, None)
-                    else:
-                        sys.stdout.write('Log directory %s do not exist\n' % logfile)
-
-
-                else:
-                    sys.stdout.write('Invalid log %s\n' % logfile)
-                    sys.exit(2)
-
-        else:
-            sys.stderr.write('Property log is missing\n')
-            sys.exit(2)
-
-    except (IOError, OSError) as e:
-        sys.stderr.write("Following exception occurred while reading config file\n")
-        sys.stderr.write(str(e)+'\n')
-        sys.exit(2)
-
-def consoleLogging(filename=None):
-    if filename:
-        healthcheckLogging(filename='console.log',default_level=DEFAUTL_LOGGING_LEVEL)
-    else:
-        healthcheckLogging(default_level=DEFAUTL_LOGGING_LEVEL)
-
-if __name__ == '__main__':
-    #hc_config=HealthCheckConfig('configv2.json',configcheck=True)
-    createLogfile('configv2.json')

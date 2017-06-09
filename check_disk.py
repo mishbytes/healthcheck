@@ -33,7 +33,7 @@ env.timeout=30
 #errors on the remote end
 env.warn_only=True
 
-def diskStatus(environment,mount,default_timeout=30):
+def diskStatus(environment,group,mount,default_timeout=30):
     #log.info(env.hosts)
     log = logging.getLogger('diskStatus()')
     status=False
@@ -83,18 +83,15 @@ def diskStatus(environment,mount,default_timeout=30):
             "type":"disk",
             "service_id":service_id,
             "last_checked":last_checked,
-            "environment":environment
+            "environment":environment,
+            "group":group
             }
     _status={mount:output}
     return _status
 
 
-def getDiskStatus(environment,hosts_list,username,mountpath,private_key='',debug=False):
+def getDiskStatus(environment,group,hosts_list,username,mountpath,private_key='',debug=False):
     log = logging.getLogger('getDiskStatus()')
-    normalized_output={}
-    normalized_output["value"]={}
-    normalized_output["message"]={}
-    normalized_output["return_code"]={}
 
     log.debug("Is Fabric debug enabled in configuration? %s" % debug)
     if not debug:
@@ -115,7 +112,7 @@ def getDiskStatus(environment,hosts_list,username,mountpath,private_key='',debug
                         timeout=60
                       ):
             log.debug(">> BEGIN: Environment: %s Disk: %s check" %(environment,mountpath))
-            disk_output = tasks.execute(diskStatus,environment,mountpath)
+            disk_output = tasks.execute(diskStatus,environment,group,mountpath)
             log.debug(">> END: Environment: %s Disk: %s check" %(environment,mountpath))
             disconnect_all() # Call this when you are done, or get an ugly exception!
 
@@ -123,4 +120,4 @@ def getDiskStatus(environment,hosts_list,username,mountpath,private_key='',debug
     return disk_output
 
 if __name__ == '__main__':
-    getDiskStatus('test','localhost','blank','/tmp',private_key='',debug=False)
+    getDiskStatus('test','SAS Web Applications','localhost','blank','/tmp',private_key='',debug=False)

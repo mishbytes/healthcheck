@@ -36,7 +36,7 @@ env.keepalive=10
 #errors on the remote end
 env.warn_only=True
 
-def runsasserverstatus(environment,scriptpath,default_timeout=30):
+def runsasserverstatus(environment,group,scriptpath,default_timeout=30):
     #log.info(env.hosts)
     log = logging.getLogger('runsasserverstatus()')
 
@@ -125,7 +125,8 @@ def runsasserverstatus(environment,scriptpath,default_timeout=30):
                                 "type":"sasserver.sh",
                                 "service_id":service_id,
                                 "last_checked":last_checked,
-                                "environment":environment
+                                "environment":environment,
+                                "group":group
                                 }
                         if not service in collect_status:
                             collect_status[service]={}
@@ -168,7 +169,8 @@ def runsasserverstatus(environment,scriptpath,default_timeout=30):
                 "type":"sasserver.sh",
                 "service_id":service_id,
                 "last_checked":last_checked,
-                "environment":environment
+                "environment":environment,
+                "group":group
                 }
         if not scriptpath in collect_status:
             collect_status[scriptpath]={}
@@ -177,7 +179,7 @@ def runsasserverstatus(environment,scriptpath,default_timeout=30):
     return collect_status
 
 
-def getsasserverstatus(environment,hosts_list,username,scriptpath,private_key='',debug=False):
+def getsasserverstatus(environment,group,hosts_list,username,scriptpath,private_key='',debug=False):
     log = logging.getLogger('getsasserverstatus()')
     log.debug("Is Fabric debug enabled in configuration? %s" % debug)
     sasserverstatus_output={}
@@ -202,7 +204,7 @@ def getsasserverstatus(environment,hosts_list,username,scriptpath,private_key=''
                         timeout=60
                       ):
             log.debug(">> BEGIN: Environment: %s Command: %s check" %(environment,scriptpath))
-            sasserverstatus_output = tasks.execute(runsasserverstatus,environment,scriptpath)
+            sasserverstatus_output = tasks.execute(runsasserverstatus,environment,group,scriptpath)
             log.debug(sasserverstatus_output)
             log.debug(">> END: Environment: %s Command: %s check" %(environment,scriptpath))
             disconnect_all() # Call this when you are done, or get an ugly exception!
@@ -213,4 +215,4 @@ def getsasserverstatus(environment,hosts_list,username,scriptpath,private_key=''
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     hosts=["192.168.56.201"]
-    getsasserverstatus('test',hosts,'sas','/tmp/sasserver.sh',private_key='/vagrant/va73_dist/ssh_keys/id_rsa',debug=True)
+    getsasserverstatus('test','group',hosts,'sas','/tmp/sasserver.sh',private_key='/vagrant/va73_dist/ssh_keys/id_rsa',debug=True)
