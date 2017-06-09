@@ -18,10 +18,11 @@ def send(config,messages):
     log = logging.getLogger('alert.send()')
     summary={}
     summary=messages.getGoodAndBadStatusCountbyGroup()
+    all_messages=dict(messages)
     log.debug("%s" % summary)
-    if summary:
-        message_summary_html=createSummaryHTML(os.path.dirname(os.path.abspath(__file__)),summary)
-        email(config,message_summary_html)
+    if all_messages:
+        email_html=createSummaryHTML(os.path.dirname(os.path.abspath(__file__)),summary,all_messages)
+        email(config,email_html)
     else:
         log.debug("Status is Empty")
 

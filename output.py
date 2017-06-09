@@ -12,12 +12,13 @@ def render_template(context,template_dir='/tmp',template_filename='status.html.t
     return TEMPLATE_ENVIRONMENT.get_template(template_filename).render(context)
 
 def createSummaryHTML(template_path,
-                      status):
+                      summary_status,
+                      all_messages):
     summary_html=""
     log = logging.getLogger('output.createSummaryHTML()')
-    log.debug("%s" % status)
     jinja2_context={'environment':'FCST UAT',
-                    'summary':status}
+                    'summary':summary_status,
+                    'all_messages':all_messages}
     log.debug("jinja2 context %s" % json.dumps(jinja2_context,indent=4))
     try:
         summary_html = render_template(jinja2_context,template_dir=template_path,template_filename='summary.html.template')

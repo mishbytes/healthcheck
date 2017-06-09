@@ -59,6 +59,105 @@
 </table>
 </div>
 
+<div style="max-width:4000px;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin-bottom: 80px;
+            margin-left: 0px;
+            margin-right: 0px;
+            margin-top: 0px;
+            font-size: 13px;
+			      vertical-align: baseline;
+			      position: relative;
+            ">
+            <table border="0" cellpadding="0" cellspacing="0"
+                   style="margin-left:
+                          auto; margin-right: auto; padding-left: 0px; padding-right: 0px; width: 100%;
+                          border:#818181 solid 0px;"
+                          >
+                <tr bgcolor="#e1eff8">
+                      <td width="11%" height="30" align="center"
+                          style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
+                          Host Name
+                      </td>
+                      <td width="18%" height="30" align="center"
+                          style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
+                          Service Name
+                      </td>
+                      <td width="8%" height="30" align="center"
+                          style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
+                          Type
+                      </td>
+                      <td width="8%" height="30" align="center"
+                          style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
+                          Environment
+                      </td>
+                      <td width="6%" height="30" align="center"
+                          style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
+                          Status
+                      </td>
+                      <td width="10%" height="30" align="center"
+                          style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
+                          Last Checked
+                        </h2>
+                      </td>
+                      <td width="30%" height="30" align="center"
+                          style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:14px;">
+                          Response
+                        </h2>
+                      </td>
+                </tr>
+{% set vars = {'first_row': True} %}
+{% for host, services in all_messages.items() %}
+  {% set each_host_services_count = all_messages[host]|length %}
+  {% if vars.update({'first_row': True}) %} {% endif %}
+  {% for service_name,service_values in services.items() %}
+        <tr>
+          {% if vars.first_row %}
+            <td rowspan="{{ each_host_services_count }}"
+                width="15%" height="25" align="center"
+                style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
+                {{ host }}
+            </td>
+            {% if vars.update({'first_row': False}) %} {% endif %}
+          {% endif %}
+          <td width="18%" height="25" align="center"
+              style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
+              {{ service_name }}
+          </td>
+          <td width="7%" height="25" align="center"
+             style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
+             {{ service_values['type'] }}
+          </td>
+          <td width="7%" height="25" align="center"
+             style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
+             {{ service_values['environment'] }}
+          </td>
+          {% if service_values['available'] %}
+            <td width="6%" height="25" align="center"
+                style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
+                Available
+            </td>
+          {% else %}
+            <td width="6%" height="25" align="center"
+                style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
+                Not Available
+            </td>
+          {% endif %}
+          <td width="11%" height="25" align="center"
+              style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;">
+              {{ service_values['last_checked'] }}
+          </td>
+          <td width="30%" height="25" align="center"
+              style="border-right:#818181 solid 1px; border-bottom:#818181 solid 1px; font-size:11px;" >
+              {{ service_values['message'] }}
+          </td>
+        </tr>
+
+  {% endfor %}
+{% endfor %}
+</table>
+</div>
+
 <!--[if mso]>
 </td></tr></table>
 </left>
