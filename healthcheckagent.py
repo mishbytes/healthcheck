@@ -15,7 +15,7 @@ from healthchecklogging import createLog
 os.umask(022)
 
 #CONSTANTS
-DEFAULT_CONFIG_FILE='config.json'
+DEFAULT_CONFIG_FILE='config.cfg'
 DEFAUTL_LOGGING_LEVEL=logging.INFO
 DEFAUTL_LOG_FILENAME='healthcheck.log'
 DEFAULT_WAIT_BETWEEN_TASKS=30 #seconds
@@ -50,6 +50,7 @@ class HealthcheckAgent(Daemon):
         self.run_forever = True
         self.start_event=True
         self.host=''
+        self.config=None
         self.healthcheckreporter = None
         self.check_interval = DEFAULT_CHECK_INTERVAL
         self.check_frequency = DEFAULT_CHECK_FREQUENCY
@@ -59,28 +60,36 @@ class HealthcheckAgent(Daemon):
     def _handle_sigterm(self, signum, frame):
         """Handles SIGTERM and SIGINT, which gracefully stops the agent."""
         log = logging.getLogger('HealthCheckAgent._handle_sigterm()')
-        log.info("Caught sigterm. Stopping run loop.")
 
-        #log.debug("Parent Process id is: %s" % (super(Daemon, self).pid()))
-        self.run_forever = False
-        self.start_event = False
+        if self.start_event:
 
-        if self.healthcheckreporter:
-            t_end = time.time() + DEFAULT_WAIT_TIME_BEFORE_KILL #One minutes
-            while time.time() < t_end:
-                if self.healthcheckreporter.running:
-                    t_left = t_end - time.time()
-                    log.debug("Waiting for current healthcheck to finish Time left %d of %d seconds" % (t_left,60) )
-                    time.sleep(5) #Sleep for 5 seconds
-                    continue
-                else:
-                    log.debug("There are no healthcheck current")
-                    break
-        if self.healthcheckreporter.running:
-            log.debug("Timed out waiting for current healthcheck reporter to finish")
+            log.info("Caught sigterm. Stopping run loop.")
+
+            #log.debug("Parent Process id is: %s" % (super(Daemon, self).pid()))
+            self.run_forever = False
+            self.start_event = False
+
             self.healthcheckreporter.stop()
-        log.info("Exiting. Bye bye.")
-        raise SystemExit
+
+            if self.healthcheckreporter.isRunning():
+                t_end = time.time() + DEFAULT_WAIT_TIME_BEFORE_KILL #One minutes
+                while time.time() < t_end:
+                    if self.healthcheckreporter.isRunning():
+                        t_left = t_end - time.time()
+                        log.debug("Healthcheck Reporter thread is running")
+                        log.debug("Waiting.. Time left %d of %d seconds" % (t_left,DEFAULT_WAIT_TIME_BEFORE_KILL) )
+                        time.sleep(5) #Sleep for 5 seconds
+                        continue
+                    else:
+                        log.debug("Healthcheck Reporter thread stopped")
+                        break
+                log.debug("Timed out waiting for healthcheck reporter thread to finish")
+            else:
+                log.debug("Healthcheck Reporter thread stopped")
+            log.info("Exiting. Bye bye.")
+            raise SystemExit
+        else:
+            log.debug("Stop already in progress")
 
     @classmethod
     def info(cls, verbose=None):
@@ -88,7 +97,7 @@ class HealthcheckAgent(Daemon):
         return "Info"
 
     def run(self, config=DEFAULT_CONFIG_FILE):
-        log = logging.getLogger("HealcheckAgent.run()")
+        log = logging.getLogger("HealthCheckAgent.run()")
 
         """Main loop of the healthcheck"""
         # Gracefully exit on sigterm
@@ -99,56 +108,47 @@ class HealthcheckAgent(Daemon):
         if config:
             self.healthcheckreporter=HealthcheckReporter(self.configfile)
             self.check_interval=self.healthcheckreporter.getInterval()
-            self.check_frequency=self.healthcheckreporter.getFrequency()
 
-        log.debug("Run %s time at interval %s" % (self.check_frequency,self.check_interval))
+        log.debug("Run interval %s" % (self.check_interval))
+        run_count=1
         while self.run_forever:
-            i=1
-            while i <= self.check_frequency:
-                if self.run_forever:
-                    if i > 1 :
-                        t_end=time.time() + self.check_interval
-                        while time.time() < t_end:
-                            if self.run_forever:
-                                log.debug("waiting to run next event %s sleep %s" % (self.healthcheckreporter.start_event,DEFAULT_WAIT_BETWEEN_TASKS))
-                                time.sleep(DEFAULT_WAIT_BETWEEN_TASKS)
-                            else:
-                                break
-
-                    if self.healthcheckreporter:
-                        try:
-
-                            log.info("HealthCheck started at %s" % str(datetime.now()))
-                            start_time=time.time()
-                            self.healthcheckreporter.start()
-                            total_time=time.time()-start_time
-                            log.info("HealthCheck finished at %s" % str(datetime.now()))
-                            log.info("HealthCheck took %s seconds to complete" % total_time)
-
-                            log.info("Sending message started %s" % str(datetime.now()))
-                            start_time=time.time()
-                            self.healthcheckreporter.send()
-                            total_time=time.time()-start_time
-                            log.info("Message sent at %s" % str(datetime.now()))
-                            log.info("Alert Check took %s seconds to complete" % total_time)
-
-                            self.healthcheckreporter.running=False
-                        finally:
-                            self.healthcheckreporter.running=False
+            if run_count > 1 :
+                t_end=time.time() + self.check_interval
+                while time.time() < t_end:
+                    if self.run_forever:
+                        log.debug("Waiting to run next event.. %s sleep remaining of %s" % (self.healthcheckreporter.start_event,DEFAULT_WAIT_BETWEEN_TASKS))
+                        time.sleep(DEFAULT_WAIT_BETWEEN_TASKS)
                     else:
-                        self.healthcheckreporter.stop()
-                        log.error("Unable to to run HealthCheck")
+                        break
+            if self.healthcheckreporter and self.run_forever:
+                try:
+                    log.info("HealthCheck started at %s" % str(datetime.now()))
+                    start_time=time.time()
+                    self.healthcheckreporter.run()
+                    total_time=time.time()-start_time
+                    log.info("HealthCheck finished at %s" % str(datetime.now()))
+                    log.info("HealthCheck took %s seconds to complete" % total_time)
 
-
-                    i+=1
-
-                else:
-                    self.healthcheckreporter.stop()
+                    log.info("Sending message started %s" % str(datetime.now()))
+                    start_time=time.time()
+                    self.healthcheckreporter.send()
+                    total_time=time.time()-start_time
+                    log.info("Message sent at %s" % str(datetime.now()))
+                    log.info("Alert Check took %s seconds to complete" % total_time)
+                    self.healthcheckreporter.running=False
+                except (KeyboardInterrupt, SystemExit):
                     break
+                finally:
+                    self.healthcheckreporter.running=False
+            else:
+                #break from main loop
+                log.debug("Health check will stop")
+                break
 
-            # Explicitly kill the process, because it might be running as a daemon.
-            log.info("Exiting. Bye bye.")
-            sys.exit(0)
+
+        # Explicitly kill the process, because it might be running as a daemon.
+        log.info("Exiting. Bye bye.")
+        sys.exit(0)
 
 
 def main(argv):

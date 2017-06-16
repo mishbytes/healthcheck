@@ -3,7 +3,7 @@ import logging
 import json
 import os
 import sys
-
+import datetime
 #project
 from service import Service
 
@@ -30,13 +30,16 @@ class HealthCheckConfig(object):
         self.email_subject='Email from HealthCheck'
         self.alert_lifetime=2*60*60 # 2 hours
         self.jinja2_template='status.html.template'
+        self.full_health_report_enabled=False
+        self.full_health_report_schedule=[]
         self.logging_level=logging.INFO
         self.ssh_id_rsa_filename='~/.ssh/id_rsa'
-        self.read()
+        self.run_as_service=True
+        self.load()
 
 
-    def read(self):
-        log = logging.getLogger('config.HealthCheckConfig.read()')
+    def load(self):
+        log = logging.getLogger('config.load()')
 
         CONFIG_GOLDEN_OPTIONS=['log','interval','frequency','services']
         CONFIG_EMAIL_OPTIONS=['smtp','email_enabled','email_subject']
@@ -64,6 +67,11 @@ class HealthCheckConfig(object):
                         log.debug("Found key:pair %s:%s" % (config_key.upper(),config[config_key]))
                         if 'ENV_NAME' == config_key.upper():
                             self.env_name= config[config_key]
+                        elif 'RUN_AS_SERVICE' == config_key.upper():
+                            if 'YES' == config[config_key].upper():
+                                self.run_as_service=True
+                            else:
+                                self.run_as_service=False
                         elif 'LOG' == config_key.upper():
                             self.logfile= config[config_key]
                         elif 'VERBOSE' == config_key.upper():
@@ -102,6 +110,19 @@ class HealthCheckConfig(object):
                                 self.email_enabled=True
                         elif 'EMAIL_SUBJECT' == config_key.upper():
                             self.email_subject=config[config_key]
+                        elif 'FULL_HEALTH_REPORT_ENABLED' == config_key.upper():
+                            self.full_health_report_enabled=config[config_key]
+                        elif 'FULL_HEALTH_REPORT_SCHEDULE' == config_key.upper():
+                            #self.full_health_report_schedule=config[config_key]
+                            if isinstance(config[config_key],list):
+                                self.full_health_report_schedule=[datetime.strptime(x, '%H:%M').time() for x in config[config_key]]
+                            elif isinstance(config[config_key],str):
+                                self.full_health_report_schedule=datetime.strptime(config[config_key], '%m/%d/%Y')
+                            else:
+                                log.debug("Invalid full_health_report_schedule value")
+                                self.full_health_report_enabled=False
+                                self.full_health_report_enabled=[]
+
 
 
                 #Find and add services

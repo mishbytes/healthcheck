@@ -197,3 +197,11 @@ class Messages(object):
         log.debug(json.dumps(alert_messages,indent=4))
 
         return alert_count,alert_messages
+
+    def sendFullReport(self):
+        log = logging.getLogger('messages.sendFullReport()')
+        log.debug("Email full healthcheck report")
+
+    def sendAlerts(self):
+        log = logging.getLogger('messages.sendAlerts()')
+        log.debug("Email alerts")

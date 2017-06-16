@@ -10,18 +10,6 @@
 
 <div style="max-width:500px;
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            margin-bottom: 10px;
-            margin-left: 0px;
-            margin-right: 0px;
-            margin-top: 0px;
-            font-size: 12px;
-			vertical-align: baseline;
-			position: relative
-            ">
-<h2>{{ environment }}</h2>
-</div>
-<div style="max-width:500px;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             margin-bottom: 30px;
             margin-left: 0px;
             margin-right: 0px;
@@ -46,7 +34,7 @@
               padding-right: 0px;
               padding-top: 0px;
               position: relative;
-              width: 100%;
+              width: 50%;
               text-align: left;">
 
 {% for group, status in summary.items() %}

@@ -2,6 +2,7 @@
 import logging
 import socket
 import hashlib
+import sys
 from datetime import datetime
 
 #Fabric for ssh connections
@@ -47,7 +48,7 @@ def diskStatus(environment,group,mount,default_timeout=30):
         try:
             log.debug(">>>>>>>>>> Running \'%s\' on host %s  Command timeout %d seconds" % (command,env.host_string,default_timeout))
             status=False
-            result = run(command,timeout=default_timeout)
+            result = run(command,timeout=default_timeout,pty=False)
             log.debug(">>>>>>>>>> Finished \'%s\' on host %s  return code %d" % (command,env.host_string,result.return_code))
             return_code=result.return_code
             if return_code == 0:
@@ -56,7 +57,9 @@ def diskStatus(environment,group,mount,default_timeout=30):
             else:
                 #capture message as it may be an error message
                 message=result
-
+        except (KeyboardInterrupt,SystemExit) as syserr:
+            log.exception("sigint signal recieved %s" % env.host_string)
+            sys.exit(1)
         except CommandTimeout as connerr:
             message="Disk %s did not respond" % mount
             log.debug("Disk %s did not respond %s" % (mount,connerr))
@@ -65,9 +68,7 @@ def diskStatus(environment,group,mount,default_timeout=30):
             message="Unable to connect to %s" % (env.host_string)
             log.debug("Unable to connect to %s" % (env.host_string))
             log.exception(neterr)
-        except SystemExit as syserror:
-            log.debug("Error-code while establising ssh connection is non-zero: %s" % str(syserror))
-            #status=False
+
         except IOError as ioerr:
             message=str(ioerr)
             log.exception(ioerr)
@@ -97,6 +98,8 @@ def getDiskStatus(environment,group,hosts_list,username,mountpath,private_key=''
     if not debug:
         logging.getLogger("paramiko").setLevel(logging.WARNING)
     else:
+        logging.getLogger("paramiko").setLevel(logging.DEBUG)
+        logging.getLogger("fabric").setLevel(logging.DEBUG)
         log.debug("Debug enabled")
 
     if hosts_list:
@@ -120,4 +123,5 @@ def getDiskStatus(environment,group,hosts_list,username,mountpath,private_key=''
     return disk_output
 
 if __name__ == '__main__':
-    getDiskStatus('test','SAS Web Applications','localhost','blank','/tmp',private_key='',debug=False)
+    logging.basicConfig(level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    getDiskStatus('test','SAS Web Applications','localhost','blank','/tmp',private_key='',debug=True)

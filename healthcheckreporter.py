@@ -37,7 +37,7 @@ class HealthcheckReporter(threading.Thread):
 
         def __init__(self,configfile,configcheck=False):
             threading.Thread.__init__(self)
-            self.finished = threading.Event()
+            self.stop_reporter = threading.Event()
             self.host=get_hostname()
             self.last_service=None
             self.running=False
@@ -58,17 +58,17 @@ class HealthcheckReporter(threading.Thread):
             self.servicealertstimer={}
             self.responsetime=0
             self.messages=Messages()
-            #As this class is a thread, disable sys stdout and stderr
+            #As this class is run as a thread, disable sys stdout and stderr
             sys.stdout = open('/dev/null', 'w')
             sys.stderr = open('/dev/null', 'w')
 
 
         def stop(self):
             self.start_event=False
-            self.running=False
-            log.info("Stopping HealthcheckReporter thread")
-            self.finished.set()
-            log.info("HealthcheckReporter thread stopped")
+            self.stop_reporter.set()
+
+        def isRunning(self):
+            return self.running
 
         def getInterval(self):
             return self.config.interval
@@ -80,12 +80,11 @@ class HealthcheckReporter(threading.Thread):
             return self.config.valid
 
 
-        def start(self):
+        def run(self):
             self.responsetime=0
             #Discard old messages
             self.messages.reset()
             if self.start_event:
-                self.running=True
                 log = logging.getLogger('Healthcheck.start()')
                 status_output=[]
                 try:
@@ -93,19 +92,27 @@ class HealthcheckReporter(threading.Thread):
                         log.debug("** Status check begins **")
                         self.last_checked = str(datetime.now())
                         for service in self.config.services:
-                            log.debug("Environment: %s Application: %s Hosts: %s" % (self.config.env_name,
-                                                                                     service.service,service.hosts.keys()))
-                            self.last_service=service
-                            start_time=time.time()
-                            service.getStatus()
-                            elapsed=time.time()-start_time
-                            self.responsetime+=elapsed
-                            log.debug("Status Response" % service.status)
-                            try:
-                                self.messages.add(service.status)
-                            except ValueError as e:
-                                log.debug("Invalid status format")
-                                log.exception(e)
+                            #If thread stop event is called then break from while loop
+                            if not self.stop_reporter.is_set():
+                                self.running=True
+                                log.debug("Environment: %s Application: %s Hosts: %s" % (self.config.env_name,
+                                                                                         service.service,service.hosts.keys()))
+                                self.last_service=service
+                                start_time=time.time()
+                                service.getStatus()
+                                elapsed=time.time()-start_time
+                                self.responsetime+=elapsed
+                                log.debug("Status Response" % service.status)
+                                try:
+                                    self.messages.add(service.status)
+                                except ValueError as e:
+                                    log.debug("Invalid status format")
+                                    log.exception(e)
+                                self.running=False
+                            else:
+                                self.running=False
+                                break
+
                         log.debug("** Status check ends **")
                     else:
                         log.debug("No applications loaded")
