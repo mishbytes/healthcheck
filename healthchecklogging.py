@@ -6,7 +6,6 @@ import sys
 DEFAUTL_LOGGING_LEVEL=logging.INFO
 
 def HealthCheckLogging(configfile=None,default_level=logging.INFO,filename=None):
-
     if configfile:
         try:
             with open(configfile) as f:
@@ -19,8 +18,13 @@ def HealthCheckLogging(configfile=None,default_level=logging.INFO,filename=None)
                             default_level=logging.INFO
                     if 'LOG' == config_key.upper():
                         filename = config[config_key]
+        except IOError as ioerr:
+            sys.stderr.write(str(ioerr)+'\n')
+            sys.exit(1)
         except Exception as err:
-            log.exception(err)
+            sys.stderr.write("Following exception occurred while reading config file\n")
+            sys.stderr.write(str(err)+'\n')
+            sys.exit(1)
 
     # Remove all handlers associated with the root logger object.
     for handler in logging.root.handlers[:]:

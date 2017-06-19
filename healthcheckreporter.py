@@ -33,11 +33,9 @@ from alert import send
 
 log = logging.getLogger('HealthCheckReporter')
 
-class HealthcheckReporter(threading.Thread):
+class HealthcheckReporter(object):
 
         def __init__(self,configfile,configcheck=False):
-            threading.Thread.__init__(self)
-            self.stop_reporter = threading.Event()
             self.host=get_hostname()
             self.last_service=None
             self.running=False
@@ -58,14 +56,11 @@ class HealthcheckReporter(threading.Thread):
             self.servicealertstimer={}
             self.responsetime=0
             self.messages=Messages()
-            #As this class is run as a thread, disable sys stdout and stderr
-            sys.stdout = open('/dev/null', 'w')
-            sys.stderr = open('/dev/null', 'w')
+
 
 
         def stop(self):
             self.start_event=False
-            self.stop_reporter.set()
 
         def isRunning(self):
             return self.running
@@ -85,7 +80,7 @@ class HealthcheckReporter(threading.Thread):
             #Discard old messages
             self.messages.reset()
             if self.start_event:
-                log = logging.getLogger('Healthcheck.start()')
+                log = logging.getLogger('HealthcheckReporter.start()')
                 status_output=[]
                 try:
                     if self.config.services:
@@ -93,10 +88,9 @@ class HealthcheckReporter(threading.Thread):
                         self.last_checked = str(datetime.now())
                         for service in self.config.services:
                             #If thread stop event is called then break from while loop
-                            if not self.stop_reporter.is_set():
+                            if self.start_event:
                                 self.running=True
-                                log.debug("Environment: %s Application: %s Hosts: %s" % (self.config.env_name,
-                                                                                         service.service,service.hosts.keys()))
+                                log.debug("checking service %s" % json.dumps(dict(service),indent=4))
                                 self.last_service=service
                                 start_time=time.time()
                                 service.getStatus()

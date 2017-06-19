@@ -125,7 +125,7 @@ class HealthCheckConfig(object):
 
 
 
-                #Find and add services
+                #Find service and create service class instance
                 for services in config["services"]:
 
                     service_upper_case=[]
@@ -174,6 +174,7 @@ class HealthCheckConfig(object):
                         group="Others"
 
                     if  service_enabled:
+                        log.debug("Loading services from Configuration file")
                         for service in services['service']:
                             self.services.append(Service(environment_name,
                                                      environment_level,

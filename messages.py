@@ -54,7 +54,6 @@ class Message(object):
 
     def __add__(self,new):
         combined_dict={}
-        print self
         combined_dict.update(str(self))
         #combined_dict.update(str(new))
         return self

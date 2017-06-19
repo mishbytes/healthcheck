@@ -25,7 +25,6 @@ START_COMMANDS = ['start', 'restart']
 
 
 #PATH
-DEFAULT_CONFIG_FILE='config.json'
 AGENT_DIR=os.path.dirname(os.path.abspath(__file__))
 PID_NAME = __file__
 PID_DIR = AGENT_DIR
@@ -69,7 +68,7 @@ class HealthcheckAgent(Daemon):
             self.run_forever = False
             self.start_event = False
 
-            self.healthcheckreporter.stop()
+            #self.healthcheckreporter.stop()
 
             if self.healthcheckreporter.isRunning():
                 t_end = time.time() + DEFAULT_WAIT_TIME_BEFORE_KILL #One minutes
@@ -81,6 +80,7 @@ class HealthcheckAgent(Daemon):
                         time.sleep(5) #Sleep for 5 seconds
                         continue
                     else:
+                        self.healthcheckreporter.stop()
                         log.debug("Healthcheck Reporter thread stopped")
                         break
                 log.debug("Timed out waiting for healthcheck reporter thread to finish")
@@ -109,15 +109,17 @@ class HealthcheckAgent(Daemon):
             self.healthcheckreporter=HealthcheckReporter(self.configfile)
             self.check_interval=self.healthcheckreporter.getInterval()
 
-        log.debug("Run interval %s" % (self.check_interval))
+        log.debug("Run interval %s seconds" % (self.check_interval))
         run_count=1
         while self.run_forever:
             if run_count > 1 :
                 t_end=time.time() + self.check_interval
-                while time.time() < t_end:
+                t_left=int(t_end-time.time())
+                while t_left:
                     if self.run_forever:
-                        log.debug("Waiting to run next event.. %s sleep remaining of %s" % (self.healthcheckreporter.start_event,DEFAULT_WAIT_BETWEEN_TASKS))
+                        log.debug("Waiting to run next event.. %s sleep remaining of %s" % (t_left,self.check_interval))
                         time.sleep(DEFAULT_WAIT_BETWEEN_TASKS)
+                        t_left=t_end-time.time()
                     else:
                         break
             if self.healthcheckreporter and self.run_forever:
@@ -144,6 +146,8 @@ class HealthcheckAgent(Daemon):
                 #break from main loop
                 log.debug("Health check will stop")
                 break
+
+            run_count+=1
 
 
         # Explicitly kill the process, because it might be running as a daemon.
@@ -183,6 +187,7 @@ def main(argv):
         CONFIG_FILE=AGENT_DIR + '/' + DEFAULT_CONFIG_FILE
         #initialize log
         HealthCheckLogging(configfile=CONFIG_FILE)
+        #log.debug(CONFIG_FILE)
         #Initialize Agent
         hcagent = HealthcheckAgent(PidFile(PID_NAME, PID_DIR).get_path())
 

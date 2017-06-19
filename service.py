@@ -48,6 +48,7 @@ class Service(object):
         self.message=''
         self.last_checked=None
         self.command_timeoutseconds=30
+        self.running=False
 
         #Extract host from dictionary key
         if len(self.hosts) > 1:
@@ -57,9 +58,36 @@ class Service(object):
             self.hosts_str=str(hosts.keys()[0])
             self.hosts_list.append(str(hosts.keys()[0]))
 
-
     def isAvailable(self):
         return self.available
+
+    def __str__(self):
+        return str(dict(self))
+
+    def __iter__(self):
+        # first start by grabbing the Class items
+        #iters = dict((x,y) for x,y in Message.__dict__.items() if x[:2] != '__')
+        iters={}
+
+        combined_services={}
+        service_desc={"type":self.type,
+                      "group":self.group,
+                      "port":self.port}
+        for host in self.hosts_list:
+            if host in combined_services:
+                if not self.service in combined_services[host]:
+                    combined_services[host][self.service]={}
+            else:
+                combined_services[host]={}
+                combined_services[host][self.service]={}
+            combined_services[host][self.service]=service_desc
+
+        # then update the class items with the instance items
+        iters.update(combined_services)
+
+        # now 'yield' through the items
+        for x,y in iters.items():
+            yield x,y
 
     def getStatus(self):
         log = logging.getLogger('service.getStatus()')
