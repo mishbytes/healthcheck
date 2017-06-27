@@ -8,9 +8,15 @@ from datetime import datetime
 #project
 from utils.pidfile import PidFile
 from utils.daemon import Daemon
-from healthcheckreporter import HealthcheckReporter
+
 from config import HealthCheckConfig
+from config import getconfigpath
+from config import getpiddir
+from config import getpidname
+
+from healthcheckreporter import HealthcheckReporter
 from healthchecklogging import initializeLogging
+
 
 os.umask(022)
 
@@ -27,8 +33,7 @@ DEFAULT_WAIT_BETWEEN_TASKS=30 #seconds
 DEFAULT_WAIT_TIME_BEFORE_KILL=1*60 #1 minute
 START_COMMANDS = ['start', 'restart']
 
-#Call function to Initialize logging
-initializeLogging(configfile=DEFAULT_CONFIG_FILE)
+
 
 #global
 log = logging.getLogger(__name__)
@@ -96,7 +101,7 @@ class HealthcheckAgent(Daemon):
         logging.getLogger().setLevel(logging.ERROR)
         return "Info"
 
-    def run(self, config=CONFIG_FILE):
+    def run(self):
 
         log = logging.getLogger("HealthCheckAgent.run()")
 
@@ -105,6 +110,10 @@ class HealthcheckAgent(Daemon):
         signal.signal(signal.SIGTERM, self._handle_sigterm)
         # Handle Keyboard Interrupt
         signal.signal(signal.SIGINT, self._handle_sigterm)
+
+        config=getconfigpath()
+        #Call function to Initialize logging
+        initializeLogging(configfile=config)
 
         if config:
             log.info("Found configuration file %s" % os.path.abspath(config))
@@ -196,10 +205,9 @@ def main(argv):
         return 3
 
     if command in COMMANDS_AGENT:
-
         #log.debug(CONFIG_FILE)
         #Initialize Agent
-        hcagent = HealthcheckAgent(PidFile(PID_NAME, PID_DIR).get_path())
+        hcagent = HealthcheckAgent(PidFile(getpidname(), getpiddir()).get_path())
 
     if command in START_COMMANDS:
         #log.info('Healthcheck Agent version 1.0')

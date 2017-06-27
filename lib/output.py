@@ -4,6 +4,8 @@ import json
 from jinja2 import Environment, FileSystemLoader
 
 
+
+
 def render_template(context,template_dir='/tmp',template_filename='status.html.template'):
     TEMPLATE_ENVIRONMENT = Environment(
         autoescape=False,

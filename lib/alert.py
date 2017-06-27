@@ -11,6 +11,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 #from output import generateStatusHtmlPage
 from config import HealthCheckConfig
+from config import gethtmltemplatedir
 
 from output import createSummaryHTML
 
@@ -22,7 +23,7 @@ def send(config,messages):
     log.debug("%s" % summary)
     if all_messages:
         #convert messages into HTML using jinja2
-        email_html=createSummaryHTML(os.path.dirname(os.path.abspath(__file__)),summary,all_messages)
+        email_html=createSummaryHTML(gethtmltemplatedir(),summary,all_messages)
         email(config,email_html)
     else:
         log.debug("Status is Empty")

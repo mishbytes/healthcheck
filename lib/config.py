@@ -266,3 +266,36 @@ class HealthCheckConfig(object):
         else:
             log.error("Configuration File %s does not exist" % configfile)
             return False
+
+def maindir():
+    LIB_DIR = os.path.dirname(os.path.realpath(__file__))
+    PARENT_OF_LIB_DIR=os.path.abspath(os.path.join(LIB_DIR, os.pardir))
+    return PARENT_OF_LIB_DIR
+
+def configdpath():
+    CONFIGD_DIR=os.path.join(maindir(), 'conf.d')
+    return CONFIGD_DIR
+
+def defaultconfigpath():
+    DEFAULT_CONFIG_FILE = os.path.join(configdpath(),'config.cfg')
+    return DEFAULT_CONFIG_FILE
+
+def getconfigpath():
+    DEFAULT_CONFIG_FILE=defaultconfigpath()
+    HC_CONFIG_FILE=os.getenv('HC_CONFIG_FILE',DEFAULT_CONFIG_FILE)
+    #in case HC_CONFIG_FILE is set and empty
+    if not HC_CONFIG_FILE:
+        HC_CONFIG_FILE=DEFAULT_CONFIG_FILE
+    return HC_CONFIG_FILE
+
+def getpiddir():
+    piddir=maindir()
+    return piddir
+
+def getpidname():
+    pidname='sashcagent'
+    return pidname
+
+def gethtmltemplatedir():
+    HTML_TEMPLATE_PATH = os.path.join(maindir(),'html')
+    return HTML_TEMPLATE_PATH

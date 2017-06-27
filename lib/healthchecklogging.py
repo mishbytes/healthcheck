@@ -19,12 +19,13 @@ def initializeLogging(configfile=None,default_level=logging.INFO,filename=None):
                     if 'LOG' == config_key.upper():
                         filename = config[config_key]
         except IOError as ioerr:
+            sys.stderr.write("Unable to initialize logging..Exit"+'\n')
             sys.stderr.write(str(ioerr)+'\n')
             sys.exit(1)
         except Exception as err:
             sys.stderr.write("Following exception occurred while reading config file\n")
             sys.stderr.write(str(err)+'\n')
-            sys.stderr.write("System Exit with status code 2")
+            sys.stderr.write("Unable to initialize logging..Exit"+'\n')
             sys.exit(1)
 
     # Remove all handlers associated with the root logger object.
