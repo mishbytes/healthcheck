@@ -8,6 +8,7 @@ from config import getconfigpath
 DEFAUTL_LOGGING_LEVEL=logging.INFO
 
 def initializeLogging(configfile=None,default_level=logging.INFO,filename=None):
+    log = logging.getLogger('healthchecklogging.initializeLogging()')
     if configfile:
         try:
             with open(configfile) as f:
@@ -21,14 +22,12 @@ def initializeLogging(configfile=None,default_level=logging.INFO,filename=None):
                     if 'LOG' == config_key.upper():
                         filename = config[config_key]
         except IOError as ioerr:
-            sys.stderr.write("Log initialization failed"+'\n')
+            sys.stderr.write("Unable to read configuration file"+'\n')
             sys.stderr.write(str(ioerr)+'\n')
-            sys.exit(1)
         except Exception as err:
             sys.stderr.write("Following exception occurred while loading config file\n")
             sys.stderr.write(str(err)+'\n')
-            sys.stderr.write("Log initialization failed"+'\n')
-            sys.exit(1)
+            sys.stderr.write("Log File initialization failed"+'\n')
 
     # Remove all handlers associated with the root logger object.
     for handler in logging.root.handlers[:]:
@@ -44,8 +43,11 @@ def initializeLogging(configfile=None,default_level=logging.INFO,filename=None):
             log.error(e)
             log.error("System Exit with status code 2")
             sys.exit(2)
+        else:
+            log.info("File logging enabled")
     else:
         logging.basicConfig(level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        log.info("console logging enabled")
 
 def touchFile(logfile):
     try:
@@ -81,7 +83,7 @@ def touchFile(logfile):
 
 if __name__ == '__main__':
     config=getconfigpath()
-    print config
+    #print config
     #Call function to Initialize logging
     initializeLogging(configfile=config)
     #initializeLogging(default_level=DEFAUTL_LOGGING_LEVEL)

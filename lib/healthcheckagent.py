@@ -122,8 +122,9 @@ class HealthcheckAgent(Daemon):
                 self.healthcheckreporter=HealthcheckReporter(self.config)
             else:
                 log.info("Configuration file %s is invalid \n" % os.path.abspath(config))
+                sys.exit(2)
         else:
-            sys.exit(1)
+            sys.exit(2)
 
         if self.healthcheckreporter:
             try:

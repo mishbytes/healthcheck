@@ -5,7 +5,6 @@ import os
 import sys
 import datetime
 #project
-from service import Service
 
 class HealthCheckConfig(object):
 
