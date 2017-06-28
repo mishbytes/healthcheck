@@ -120,57 +120,33 @@ class HealthcheckAgent(Daemon):
             self.config=HealthCheckConfig(config)
             if self.config.isValid():
                 self.healthcheckreporter=HealthcheckReporter(self.config)
-                self.check_interval=self.config.interval
             else:
                 log.info("Configuration file %s is invalid \n" % os.path.abspath(config))
         else:
             sys.exit(1)
 
-        log.debug("Run interval %s seconds" % (self.check_interval))
-        run_count=1
-        while self.run_forever:
-            if run_count > 1 :
-                if self.config.run_as_service:
-                    log.debug("Run as service set to True")
-                    t_end=time.time() + self.check_interval
-                    t_left=int(t_end-time.time())
-                    while t_left:
-                        if self.run_forever:
-                            log.debug("Waiting to run next event.. %s sleep remaining of %s" % (t_left,self.check_interval))
-                            time.sleep(DEFAULT_WAIT_BETWEEN_TASKS)
-                            t_left=t_end-time.time()
-                        else:
-                            break
-                else:
-                    log.debug("Run as service set to False. Break from forever loop")
-                    break
-            if self.healthcheckreporter and self.run_forever:
-                try:
-                    log.info("HealthCheck started at %s" % str(datetime.now()))
-                    start_time=time.time()
-                    self.healthcheckreporter.run()
-                    total_time=time.time()-start_time
-                    log.info("HealthCheck finished at %s" % str(datetime.now()))
-                    log.info("HealthCheck took %s seconds to complete" % total_time)
+        if self.healthcheckreporter:
+            try:
+                log.info("HealthCheck started at %s" % str(datetime.now()))
+                start_time=time.time()
+                self.healthcheckreporter.run()
+                total_time=time.time()-start_time
+                log.info("HealthCheck finished at %s" % str(datetime.now()))
+                log.info("HealthCheck took %s seconds to complete" % total_time)
 
-                    log.info("Sending message started %s" % str(datetime.now()))
-                    start_time=time.time()
-                    self.healthcheckreporter.send()
-                    total_time=time.time()-start_time
-                    log.info("Message sent at %s" % str(datetime.now()))
-                    log.info("Alert Check took %s seconds to complete" % total_time)
-                    self.healthcheckreporter.running=False
-                except (KeyboardInterrupt, SystemExit):
-                    break
-                finally:
-                    self.healthcheckreporter.running=False
-            else:
-                #break from main loop
-                log.debug("Health check will stop")
-                break
-
-            run_count+=1
-
+                log.info("Sending message started %s" % str(datetime.now()))
+                start_time=time.time()
+                self.healthcheckreporter.send()
+                total_time=time.time()-start_time
+                log.info("Message sent at %s" % str(datetime.now()))
+                log.info("Alert Check took %s seconds to complete" % total_time)
+                self.healthcheckreporter.running=False
+            except (KeyboardInterrupt, SystemExit):
+                self.healthcheckreporter.running=False
+            finally:
+                self.healthcheckreporter.running=False
+        else:
+            log.debug("Reporter class not initialized")
 
         # Explicitly kill the process, because it might be running as a daemon.
         log.info("Exiting. Bye bye.")

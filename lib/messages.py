@@ -2,6 +2,11 @@ import json
 import hashlib
 import logging
 import time
+try:
+    import cPickle as pickle
+except:
+    import pickle
+from config import datapath
 
 class Message(object):
     def __init__(self,json_object):
@@ -144,8 +149,8 @@ class Messages(object):
                 unavailable_dict.update(dict(message))
         return unavailable_count,unavailable_dict
 
-    def getGoodAndBadStatusCountbyGroup(self):
-        log = logging.getLogger('messages.Messages.getGoodAndBadStatusCountbyGroup()')
+    def summary(self):
+        log = logging.getLogger('messages.Messages.summary()')
         output_dict={}
         for message in self.messages:
             if not message.group in output_dict:
@@ -160,8 +165,43 @@ class Messages(object):
         log.debug("%s" % json.dumps(output_dict))
         return output_dict
 
-    def getAlertMessagesAsDict(self,alert_lifetime=7200):
-        log = logging.getLogger('messages.getAlertMessagesAsDict()')
+    def persistAlerts(self):
+        log = logging.getLogger('messages.persistAlerts()')
+        alert_data_file=datapath()
+        log.debug("Writing alerts to data file %s" % alert_data_file)
+        try:
+            with open(alert_data_file, "wb") as fp:
+                log.debug(self.messages_alert_timer)
+                pickle.dump(self.messages_alert_timer,fp)
+        except pickle.UnpicklingError as e:
+            # normal, somewhat expected
+            log.exception(e)
+        except (AttributeError,  EOFError, ImportError, IndexError) as e:
+            log.exception(e)
+        except Exception as e:
+            log.exception(e)
+
+    def loadAlerts(self):
+        log = logging.getLogger('messages.loadAlerts()')
+        alert_data_file=datapath()
+        log.debug("Reading alerts from data file %s" % alert_data_file)
+        try:
+            with open(alert_data_file, "rb") as fp:
+                log.debug(self.messages_alert_timer)
+                self.messages_alert_timer=pickle.load(fp)
+        except pickle.UnpicklingError as e:
+            # normal, somewhat expected
+            log.debug(e)
+        except (AttributeError,  EOFError, ImportError, IndexError) as e:
+            log.debug(e)
+        except Exception as e:
+            log.debug(e)
+
+
+    def getAlerts(self,alert_lifetime=7200):
+        log = logging.getLogger('messages.getAlerts()')
+        self.loadAlerts()
+        log.debug("Alerts loaded from file %s" % json.dumps(self.messages_alert_timer,indent=4))
         alert_messages={}
         alert_count=0
         alert_found=True
@@ -190,17 +230,65 @@ class Messages(object):
                 if message.service_id in self.messages_alert_timer:
                     del self.messages_alert_timer[message.service_id]
 
-
-        log.debug(json.dumps(self.messages_alert_timer,indent=4))
+        log.debug("Saving alerts to data file %s" % json.dumps(self.messages_alert_timer,indent=4))
+        self.persistAlerts()
         log.debug("Following services will be alerted")
         log.debug(json.dumps(alert_messages,indent=4))
 
         return alert_count,alert_messages
 
-    def sendFullReport(self):
-        log = logging.getLogger('messages.sendFullReport()')
-        log.debug("Email full healthcheck report")
+if __name__ == '__main__':
+    myjson={"testserver": {
+                               "SASStudio": {
+                                               "available": False,
+                                               "return_code": 300,
+                                               "last_checked": "2017-06-05 11:56:42.181631",
+                                               "service_id": "3e460a2bbbe7f0f29b13c7d910959fd3",
+                                               "message": "[Errno 8] nodename nor servname provided, or not known",
+                                               "type": "webapp",
+                                               "group":"SAS Web applications"
+                                             },
+                               "SASStudio2": {
+                                               "available": True,
+                                               "return_code": 300,
+                                               "last_checked": "2017-06-05 11:56:42.181631",
+                                               "service_id": "3e460a2bbbe7f0f29b13c7d910959fd3",
+                                               "message": "[Errno 8] nodename nor servname provided, or not known",
+                                               "type": "webapp"
+                                             }
 
-    def sendAlerts(self):
-        log = logging.getLogger('messages.sendAlerts()')
-        log.debug("Email alerts")
+                            },
+            "testserver3": {
+                                       "SASStudio": {
+                                                       "available": True,
+                                                       "return_code": 300,
+                                                       "last_checked": "2017-06-05 11:56:42.181631",
+                                                       "service_id": "3e460a2bbbe7f0f29b13c7d910959fd3",
+                                                       "message": "[Errno 8] nodename nor servname provided, or not known",
+                                                       "type": "webapp"
+                                                     },
+                                       "SASStudio2": {
+                                                       "available": False,
+                                                       "return_code": 300,
+                                                       "last_checked": "2017-06-05 11:56:42.181631",
+                                                       "service_id": "3e460a2bbbe7f0f29b13c7d910959fd3",
+                                                       "message": "[Errno 8] nodename nor servname provided, or not known",
+                                                       "type": "webapp",
+                                                       "environment":"unknown"
+                                                     }
+
+                                    }
+              }
+
+    try:
+        #from healthchecklogging import initializeLogging
+        #initializeLogging(default_level=logging.DEBUG)
+        #config=HealthCheckConfig(getconfigpath())
+        log = logging.getLogger('messages.main()')
+        logging.basicConfig(level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        cls3=Messages()
+        cls3.add(myjson)
+        count,alerts=cls3.getAlerts(alert_lifetime=120)
+        log.debug(json.dumps(alerts,indent=4))
+    except ValueError as e:
+        print "cls3 not created: %s" % e

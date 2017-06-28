@@ -27,7 +27,6 @@ from email.mime.text import MIMEText
 from service import Service
 from config import HealthCheckConfig
 from utils.hosts import get_hostname
-from output import generateStatusHtmlPage
 from messages import Messages
 from alert import send
 

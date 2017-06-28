@@ -35,20 +35,22 @@ class HealthCheckConfig(object):
         self.logging_level=logging.INFO
         self.ssh_id_rsa_filename='~/.ssh/id_rsa'
         self.run_as_service=True
+        #Valid values ALL and ALERT
+        self.report_type="ALERT"
         self.load()
 
 
     def load(self):
         log = logging.getLogger('config.load()')
 
-        CONFIG_GOLDEN_OPTIONS=['log','interval','frequency','services']
+        CONFIG_GOLDEN_OPTIONS=['log','services']
         CONFIG_EMAIL_OPTIONS=['smtp','email_enabled','email_subject']
-        CONFIG_OTHER_OPTIONS=['env_name','env_level','alert_lifetime','jinja2_template','verbose','version','comment','run_as_service']
+        CONFIG_OTHER_OPTIONS=['env_name','env_level','alert_lifetime','verbose','version','comment','report_type']
         CONFIG_ALL_OPTIONS=CONFIG_GOLDEN_OPTIONS + CONFIG_EMAIL_OPTIONS + CONFIG_OTHER_OPTIONS
 
         CONFIG_SERVICES_GOLDEN_OPTIONS=['type2','service','protocol','hosts','port','user','password']
         CONFIG_SERVICES_OTHER_OPTIONS=['enabled','debug','description']
-        CONFIG_SERVICES_TYPE_VALID_VALUES=['webapp','disk']
+        CONFIG_SERVICES_TYPE_VALID_VALUES=['webapp','disk','sas.servers']
         CONFIG_SERVICES_ALL_OPTIONS= CONFIG_SERVICES_GOLDEN_OPTIONS + CONFIG_SERVICES_OTHER_OPTIONS
 
         if self.checkonly:
@@ -67,11 +69,6 @@ class HealthCheckConfig(object):
                         log.debug("Got %s:%s" % (config_key.upper(),config[config_key]))
                         if 'ENV_NAME' == config_key.upper():
                             self.env_name= config[config_key]
-                        elif 'RUN_AS_SERVICE' == config_key.upper():
-                            if 'YES' == config[config_key].upper():
-                                self.run_as_service=True
-                            else:
-                                self.run_as_service=False
                         elif 'LOG' == config_key.upper():
                             self.logfile= config[config_key]
                         elif 'VERBOSE' == config_key.upper():
@@ -79,14 +76,16 @@ class HealthCheckConfig(object):
                                 self.logging_level=logging.DEBUG
                             else:
                                 self.logging_level=logging.INFO
-                        elif 'INTERVAL' == config_key.upper():
-                            self.interval= config[config_key]
                         elif 'ALERT_LIFETIME' == config_key.upper():
                             self.alert_lifetime= config[config_key]
-                        elif 'FREQUENCY' == config_key.upper():
-                            self.frequency= config[config_key]
-                        elif 'JINJA2_TEMPLATE' == config_key.upper():
-                            self.jinja2_template= config[config_key]
+                        elif 'REPORT_TYPE' == config_key.upper():
+                            if config[config_key].upper() in ['ALL','ALERT']:
+                                if 'ALL' == config[config_key].upper():
+                                    self.report_type= config[config_key]
+                                elif 'HTML' == config[config_key].upper():
+                                    self.report_type= config[config_key]
+                            else:
+                                log.debug("Valid value for report_type is ALL|ALERT|HTML")
                         elif 'SMTP' == config_key.upper():
                             for smtp_key in config[config_key]:
                                 if 'HOST' == smtp_key.upper():
@@ -110,20 +109,6 @@ class HealthCheckConfig(object):
                                 self.email_enabled=True
                         elif 'EMAIL_SUBJECT' == config_key.upper():
                             self.email_subject=config[config_key]
-                        elif 'FULL_HEALTH_REPORT_ENABLED' == config_key.upper():
-                            self.full_health_report_enabled=config[config_key]
-                        elif 'FULL_HEALTH_REPORT_SCHEDULE' == config_key.upper():
-                            #self.full_health_report_schedule=config[config_key]
-                            if isinstance(config[config_key],list):
-                                self.full_health_report_schedule=[datetime.strptime(x, '%H:%M').time() for x in config[config_key]]
-                            elif isinstance(config[config_key],str):
-                                self.full_health_report_schedule=datetime.strptime(config[config_key], '%m/%d/%Y')
-                            else:
-                                log.debug("Invalid full_health_report_schedule value")
-                                self.full_health_report_enabled=False
-                                self.full_health_report_enabled=[]
-
-
 
                 #Find service and create service class instance
                 for services in config["services"]:
@@ -132,8 +117,8 @@ class HealthCheckConfig(object):
                     for k in services:
                         service_upper_case.append(k.upper())
 
-                    for service_upcase_property in service_upper_case:
-                        log.debug("upper case service properties %s " % service_upcase_property)
+                    #for service_upcase_property in service_upper_case:
+                        #log.debug("upper case service properties %s " % service_upcase_property)
 
                     if "ENABLED" in service_upper_case:
                         if "NO" == services["enabled"].upper():
@@ -173,7 +158,7 @@ class HealthCheckConfig(object):
                     else:
                         group="Others"
 
-                    if  service_enabled:
+                    if  service_enabled and services['type'] in CONFIG_SERVICES_TYPE_VALID_VALUES:
                         log.debug("Loading services from Configuration file")
                         for service in services['service']:
                             self.services.append(Service(environment_name,
@@ -222,7 +207,7 @@ class HealthCheckConfig(object):
     def validate(self,configfile):
         log = logging.getLogger('config.HealthCheckConfig.validate()')
         VALID_CONFIG_FILE=True
-        CONFIG_GOLDEN_OPTIONS=['log','interval','frequency','services']
+        CONFIG_GOLDEN_OPTIONS=['log','services']
         CONFIG_SERVICES_GOLDEN_OPTIONS=['type','service','protocol','hosts','port','user','password']
 
         log.debug("Validating configuration File Exist %s?" % (configfile))
@@ -272,12 +257,20 @@ def maindir():
     PARENT_OF_LIB_DIR=os.path.abspath(os.path.join(LIB_DIR, os.pardir))
     return PARENT_OF_LIB_DIR
 
-def configdpath():
+def configddir():
     CONFIGD_DIR=os.path.join(maindir(), 'conf.d')
     return CONFIGD_DIR
 
+def datadir():
+    DATA_DIR=os.path.join(maindir(), 'data')
+    return DATA_DIR
+
+def datapath():
+    DATA_PKL=os.path.join(datadir(), 'alerts.dat')
+    return DATA_PKL
+
 def defaultconfigpath():
-    DEFAULT_CONFIG_FILE = os.path.join(configdpath(),'config.cfg')
+    DEFAULT_CONFIG_FILE = os.path.join(configddir(),'config.cfg')
     return DEFAULT_CONFIG_FILE
 
 def getconfigpath():

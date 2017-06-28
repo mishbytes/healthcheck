@@ -12,21 +12,29 @@ from email.mime.text import MIMEText
 #from output import generateStatusHtmlPage
 from config import HealthCheckConfig
 from config import gethtmltemplatedir
+from config import getconfigpath
 
-from output import createSummaryHTML
+from output import full_status_html
 
 def send(config,messages):
     log = logging.getLogger('alert.send()')
     summary={}
-    summary=messages.getGoodAndBadStatusCountbyGroup()
-    all_messages=dict(messages)
+    messages_to_send=None
+    summary=messages.summary()
     log.debug("%s" % summary)
-    if all_messages:
+    if 'ALL' == config.report_type.upper():
+        messages_to_send=dict(messages)
+    elif 'ALERT' == config.report_type.upper():
+        alertcount,messages_to_send=messages.getAlerts(alert_lifetime=config.alert_lifetime)
+
+    if messages_to_send:
         #convert messages into HTML using jinja2
-        email_html=createSummaryHTML(gethtmltemplatedir(),summary,all_messages)
+        log.debug(json.dumps(messages_to_send,indent=4))
+        email_html=full_status_html(gethtmltemplatedir(),summary,messages_to_send)
         email(config,email_html)
     else:
         log.debug("Status is Empty")
+
 
 
 def email(config,content):
@@ -73,26 +81,7 @@ def email(config,content):
         log.debug("set email_enabled to yes in config file")
 
 
-def findbymessagetype(messages,message_type="all",alert_lifetime=7200):
-    log = logging.getLogger('alert.findMessagesForEmail()')
-    message_valid_type=["ALL","GOOD","BAD"]
-    if message_type.upper() in message_valid_type:
-        if message_type.upper() == "ALL":
-            log.info("Send all messages")
-            log.info("%s" % json.dumps(dict(messages),indent=6))
-        elif message_type.upper() == "GOOD":
-            log.info("Send good messages")
-        elif message_type.upper() == "BAD":
-            log.info("Send bad messages")
-    else:
-        log.info("Invalid messgae type return none")
-
-
-
-
-
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     myjson={"testserver": {
                                "SASStudio": {
                                                "available": False,
@@ -136,9 +125,10 @@ if __name__ == '__main__':
               }
 
     try:
-        from healthchecklogging import initializeLogging
-        initializeLogging(default_level=logging.DEBUG)
-        config=HealthCheckConfig("config.json")
+        #from healthchecklogging import initializeLogging
+        #initializeLogging(default_level=logging.DEBUG)
+        config=HealthCheckConfig(getconfigpath())
+        logging.basicConfig(level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         cls3=Messages()
         cls3.add(myjson)
     except ValueError as e:
