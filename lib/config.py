@@ -180,12 +180,12 @@ class HealthCheckConfig(object):
             except (IOError, OSError) as e:
                 log.error("Exception occurred while loading config file")
                 log.error(e)
-                log.error("System Exit with status code 2")
-                sys.exit(2)
+                #log.error("System Exit with status code 2")
+                #sys.exit(2)
         else:
             log.error("Unable to load configuration file because either it does not exist or is invalid")
-            log.error("System Exit with status code 2")
-            sys.exit(2)
+            #log.error("System Exit with status code 2")
+            #sys.exit(2)
 
 
 
