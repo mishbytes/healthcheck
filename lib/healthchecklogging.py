@@ -2,6 +2,8 @@ import logging
 import json
 import os
 import sys
+from config import getconfigpath
+
 
 DEFAUTL_LOGGING_LEVEL=logging.INFO
 
@@ -19,13 +21,13 @@ def initializeLogging(configfile=None,default_level=logging.INFO,filename=None):
                     if 'LOG' == config_key.upper():
                         filename = config[config_key]
         except IOError as ioerr:
-            sys.stderr.write("Unable to initialize logging..Exit"+'\n')
+            sys.stderr.write("Log initialization failed"+'\n')
             sys.stderr.write(str(ioerr)+'\n')
             sys.exit(1)
         except Exception as err:
-            sys.stderr.write("Following exception occurred while reading config file\n")
+            sys.stderr.write("Following exception occurred while loading config file\n")
             sys.stderr.write(str(err)+'\n')
-            sys.stderr.write("Unable to initialize logging..Exit"+'\n')
+            sys.stderr.write("Log initialization failed"+'\n')
             sys.exit(1)
 
     # Remove all handlers associated with the root logger object.
@@ -35,7 +37,7 @@ def initializeLogging(configfile=None,default_level=logging.INFO,filename=None):
     if not filename == None:
         try:
             #Ensure log file is valid and writable
-            createLogFile(filename)
+            touchFile(filename)
             logging.basicConfig(filename=filename,level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         except (IOError, OSError) as e:
             logging.basicConfig(level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -45,7 +47,7 @@ def initializeLogging(configfile=None,default_level=logging.INFO,filename=None):
     else:
         logging.basicConfig(level=default_level,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-def createLogFile(logfile):
+def touchFile(logfile):
     try:
         if os.path.isfile(logfile):
             if os.access(logfile, os.W_OK):
@@ -58,28 +60,28 @@ def createLogFile(logfile):
         else:
             if not os.path.isdir(logfile):
                 if os.path.isdir(os.path.dirname(os.path.abspath(logfile))):
-                    sys.stdout.write('Writing to log file %s \n' % logfile)
+                    sys.stdout.write('Log File %s created \n' % logfile)
                     #touch file
                     with open(logfile, 'a'):
                         os.utime(logfile, None)
                 else:
                     sys.stderr.write('Log directory %s do not exist\n' % os.path.dirname(os.path.abspath(logfile)))
+                    sys.stderr.write("System Exit with status code 2")
+                    sys.exit(2)
             else:
                 sys.stderr.write('Invalid log %s\n' % logfile)
                 sys.stderr.write("System Exit with status code 2")
                 sys.exit(2)
 
     except (IOError, OSError) as e:
-        sys.stderr.write("Following exception occurred while reading config file\n")
+        sys.stderr.write("Exception occurred while reading config file\n")
         sys.stderr.write(str(e)+'\n')
         sys.stderr.write("System Exit with status code 2")
         sys.exit(2)
 
-def consoleLogging(filename=None):
-    if filename:
-        initializeLogging(filename='console.log',default_level=DEFAUTL_LOGGING_LEVEL)
-    else:
-        initializeLogging(default_level=DEFAUTL_LOGGING_LEVEL)
-
 if __name__ == '__main__':
-    initializeLogging(default_level=DEFAUTL_LOGGING_LEVEL)
+    config=getconfigpath()
+    print config
+    #Call function to Initialize logging
+    initializeLogging(configfile=config)
+    #initializeLogging(default_level=DEFAUTL_LOGGING_LEVEL)
