@@ -280,7 +280,7 @@ def defaultconfigpath():
     return DEFAULT_CONFIG_FILE
 
 def defaultlogpath():
-    DEFAULT_LOG_FILE = os.path.join(logsdir(),'healthcheck.log')
+    DEFAULT_LOG_FILE = os.path.join(logsdir(),'sashealthcheck_default.log')
     return DEFAULT_LOG_FILE
 
 def getconfigpath():

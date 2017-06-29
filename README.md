@@ -17,3 +17,11 @@
 	* Fabric-1.13.2
 	* jinj2
 	* markupsafe (Required by Jinja2)
+
+
+#### Scheduling using crontab
+
+#only send alerts if found 15 minutes interval of the hour
+0,15,30,45 * * * * /opt/sashealthcheck/bin/healthcheckagent.sh start > /dev/null
+#Send full status report
+58 06 * * * /opt/sashealthcheck/bin/healthcheckall.sh start > /dev/null
