@@ -14,6 +14,6 @@ ${PYTHON_MODULES}/ecdsa-0.13/lib:\
 ${PYTHON_MODULES}/pycrypto-2.6.1/lib:\
 ${APPLICATION_LIB}
 
-echo $PYTHONPATH
+#echo $PYTHONPATH
 
 python "$@"
