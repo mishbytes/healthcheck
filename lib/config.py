@@ -299,7 +299,7 @@ def getconfigname():
     match_dict = format_pat.match(getconfigpath())
     if match_dict:
         match_output=dict(match_dict.groupdict())
-        DEFAULT_CONFIG_NAME=match_output['config_filename']:
+        DEFAULT_CONFIG_NAME=match_output['config_filename']
     else:
         DEFAULT_CONFIG_NAME="config_default"
     return DEFAULT_CONFIG_NAME
