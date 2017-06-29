@@ -138,8 +138,8 @@ class HealthcheckAgent(Daemon):
                 start_time=time.time()
                 self.healthcheckreporter.send()
                 total_time=time.time()-start_time
-                log.info("Message sent at %s" % str(datetime.now()))
-                log.info("Alert Check took %s seconds to complete" % total_time)
+                log.info("Send message call finished at %s" % str(datetime.now()))
+                log.info("Send message took %s seconds to complete" % total_time)
                 self.healthcheckreporter.running=False
             except (KeyboardInterrupt, SystemExit):
                 self.healthcheckreporter.running=False

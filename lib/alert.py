@@ -23,8 +23,10 @@ def send(config,messages):
     summary=messages.summary()
     log.debug("%s" % summary)
     if 'ALL' == config.report_type.upper():
+        log.debug("Sending all messages")
         messages_to_send=dict(messages)
     elif 'ALERT' == config.report_type.upper():
+        log.debug("Sending only alerts")
         alertcount,messages_to_send=messages.getAlerts(alert_lifetime=config.alert_lifetime)
 
     if messages_to_send:
@@ -33,7 +35,7 @@ def send(config,messages):
         email_html=full_status_html(gethtmltemplatedir(),summary,messages_to_send)
         email(config,email_html)
     else:
-        log.debug("Status is Empty")
+        log.debug("No messages found")
 
 
 

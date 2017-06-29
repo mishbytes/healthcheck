@@ -4,6 +4,8 @@ import json
 import os
 import sys
 import datetime
+
+from service import Service
 #project
 
 class HealthCheckConfig(object):
