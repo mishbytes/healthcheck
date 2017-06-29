@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import datetime
+import re
 
 from service import Service
 #project
@@ -275,7 +276,7 @@ def datapath():
     return DATA_PKL
 
 def defaultconfigpath():
-    DEFAULT_CONFIG_FILE = os.path.join(configddir(),'config.cfg')
+    DEFAULT_CONFIG_FILE = os.path.join(configddir(),'default.cfg')
     return DEFAULT_CONFIG_FILE
 
 def defaultlogpath():
@@ -290,12 +291,25 @@ def getconfigpath():
         HC_CONFIG_FILE=DEFAULT_CONFIG_FILE
     return HC_CONFIG_FILE
 
+def getconfigname():
+    #Get configuration file name without . extension
+    format_pat= re.compile(
+                            r'(?:(?:.+\/)(?P<config_filename>(.+?))(?:\.(.+)|$))?'
+                      )
+    match_dict = format_pat.match(getconfigpath())
+    if match_dict:
+        match_output=dict(match_dict.groupdict())
+        DEFAULT_CONFIG_NAME=match_output['config_filename']:
+    else:
+        DEFAULT_CONFIG_NAME="config_default"
+    return DEFAULT_CONFIG_NAME
+
 def getpiddir():
     piddir=maindir()
     return piddir
 
 def getpidname():
-    pidname='sashcagent'
+    pidname=getconfigname()
     return pidname
 
 def gethtmltemplatedir():
