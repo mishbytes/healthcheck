@@ -111,9 +111,9 @@ class HealthcheckAgent(Daemon):
         # Handle Keyboard Interrupt
         signal.signal(signal.SIGINT, self._handle_sigterm)
 
+        initializeLogging()
         config=getconfigpath()
         #Call function to Initialize logging
-        initializeLogging(configfile=config)
 
         if config:
             log.info("Found configuration file %s" % os.path.abspath(config))

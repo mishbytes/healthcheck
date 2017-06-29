@@ -3,12 +3,13 @@ import json
 import os
 import sys
 from config import getconfigpath
-
+from config import defaultlogpath
 
 DEFAUTL_LOGGING_LEVEL=logging.INFO
 
 def initializeLogging(configfile=None,default_level=logging.INFO,filename=None):
     log = logging.getLogger('healthchecklogging.initializeLogging()')
+    configfile=getconfigpath()
     if configfile:
         try:
             with open(configfile) as f:
@@ -32,6 +33,9 @@ def initializeLogging(configfile=None,default_level=logging.INFO,filename=None):
     # Remove all handlers associated with the root logger object.
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
+
+    if not filename:
+        filename=defaultlogpath()
 
     if not filename == None:
         try:

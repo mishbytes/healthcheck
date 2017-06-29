@@ -264,6 +264,10 @@ def datadir():
     DATA_DIR=os.path.join(maindir(), 'data')
     return DATA_DIR
 
+def logsdir():
+    LOGS_DIR=os.path.join(maindir(), 'logs')
+    return LOGS_DIR
+
 def datapath():
     DATA_PKL=os.path.join(datadir(), 'alerts.dat')
     return DATA_PKL
@@ -271,6 +275,10 @@ def datapath():
 def defaultconfigpath():
     DEFAULT_CONFIG_FILE = os.path.join(configddir(),'config.cfg')
     return DEFAULT_CONFIG_FILE
+
+def defaultlogpath():
+    DEFAULT_LOG_FILE = os.path.join(logsdir(),'healthcheck.log')
+    return DEFAULT_LOG_FILE
 
 def getconfigpath():
     DEFAULT_CONFIG_FILE=defaultconfigpath()
