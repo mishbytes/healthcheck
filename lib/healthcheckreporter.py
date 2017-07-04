@@ -55,7 +55,7 @@ class HealthcheckReporter(object):
             self.services_status={}
             self.servicealertstimer={}
             self.responsetime=0
-            self.messages=Messages()
+            self.messages=MessageDictionary()
 
 
 
