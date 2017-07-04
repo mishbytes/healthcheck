@@ -27,7 +27,7 @@ from email.mime.text import MIMEText
 from service import Service
 from config import HealthCheckConfig
 from utils.hosts import get_hostname
-from messages import MessageDictionary
+from messages import MessageDatabase
 from alert import send
 
 log = logging.getLogger('HealthCheckReporter')
@@ -55,7 +55,7 @@ class HealthcheckReporter(object):
             self.services_status={}
             self.servicealertstimer={}
             self.responsetime=0
-            self.messages=MessageDictionary()
+            self.messages=MessageDatabase()
 
 
 

@@ -89,7 +89,7 @@ class Message(object):
             yield x,y
     __repr__ = __str__
 
-class MessageDictionary(object):
+class MessageDatabase(object):
     def __init__(self):
         self.messages=[]
         self.messages_to_alert={}

@@ -12,22 +12,22 @@ from email.mime.text import MIMEText
 from config import HealthCheckConfig
 from config import gethtmltemplatedir
 from config import getconfigpath
-from messages import MessageDictionary
+from messages import MessageDatabase
 from output import full_status_html
 
-def send(config,messagesdict):
+def send(config,messagesdb):
     log = logging.getLogger('alert.send()')
     summary={}
     messages_to_send=None
-    summary=messages.summary()
+    summary=messagesdb.summary()
     log.debug("%s" % summary)
     if 'ALL' == config.report_type.upper():
         log.debug("Sending all messages")
-        messages_to_send=dict(messages)
+        messages_to_send=dict(messagesdb)
     elif 'ALERT' == config.report_type.upper():
         log.debug("Sending only alerts")
-        alertcount,messages_to_send=messages.getAlerts(alert_lifetime=config.alert_lifetime)
-        log.info("Alerts Count %s" % alertcount)
+        alertcount,messages_to_send=messagesdb.getAlerts(alert_lifetime=config.alert_lifetime)
+        log.info("Number of Alerts Found: %s" % alertcount)
 
     if messages_to_send:
         #convert messages into HTML using jinja2
@@ -131,7 +131,7 @@ if __name__ == '__main__':
         #initializeLogging(default_level=logging.DEBUG)
         config=HealthCheckConfig(getconfigpath())
         logging.basicConfig(level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        cls3=MessageDictionary()
+        cls3=MessageDatabase()
         cls3.add(myjson)
     except ValueError as e:
         print "cls3 not created: %s" % e
