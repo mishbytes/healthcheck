@@ -89,7 +89,7 @@ class Message(object):
             yield x,y
     __repr__ = __str__
 
-class Messages(object):
+class MessageDictionary(object):
     def __init__(self):
         self.messages=[]
         self.messages_to_alert={}
@@ -286,7 +286,7 @@ if __name__ == '__main__':
         #config=HealthCheckConfig(getconfigpath())
         log = logging.getLogger('messages.main()')
         logging.basicConfig(level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        cls3=Messages()
+        cls3=MessageDictionary()
         cls3.add(myjson)
         count,alerts=cls3.getAlerts(alert_lifetime=120)
         log.debug(json.dumps(alerts,indent=4))

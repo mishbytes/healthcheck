@@ -244,7 +244,7 @@ class HealthCheckConfig(object):
                     else:
                         log.debug("Config Golden Service keys present")
                     config={}
-                    log.info("Configuration check Passed")
+                    log.debug("Configuration file is valid")
                     return True
 
                 except Exception,e:

@@ -27,7 +27,7 @@ from email.mime.text import MIMEText
 from service import Service
 from config import HealthCheckConfig
 from utils.hosts import get_hostname
-from messages import Messages
+from messages import MessageDictionary
 from alert import send
 
 log = logging.getLogger('HealthCheckReporter')

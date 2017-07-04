@@ -116,9 +116,10 @@ class HealthcheckAgent(Daemon):
         #Call function to Initialize logging
 
         if config:
-            log.info("Found configuration file %s" % os.path.abspath(config))
+            log.info("configuration file %s" % os.path.abspath(config))
             self.config=HealthCheckConfig(config)
             if self.config.isValid():
+                log.info("Valid configuration file")
                 self.healthcheckreporter=HealthcheckReporter(self.config)
             else:
                 log.info("Invalid Configuration file %s" % os.path.abspath(config))
