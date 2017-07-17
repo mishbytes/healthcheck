@@ -154,7 +154,7 @@ class HealthCheckConfig(object):
                             debug=True
                         else:
                             debug=False
-                            log.debug("Set debug to yes to enable debug logging")
+                            log.debug("debug is set to yes")
                     else:
                         debug=False
 

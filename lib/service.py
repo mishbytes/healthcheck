@@ -142,7 +142,13 @@ class Service(object):
         else:
             log.debug("Invalid Application Type")
 
+        #Remove service names that are listed in ignord_services option
+        log.debug("ignored services %s" % self.ignored_services)
+        log.debug("status before deleting ignored services")
+        log.debug("%s" % json.dumps(self.status,indent=4))
         self.status=delete_keys_from_dict(self.status,self.ignored_services)
+        log.debug("status after deleting ignored services")
+        log.debug("%s" % json.dumps(self.status,indent=4))
 
 #https://stackoverflow.com/questions/3405715/elegant-way-to-remove-fields-from-nested-dictionaries
 def delete_keys_from_dict(dict_del, lst_keys):
