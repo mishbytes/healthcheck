@@ -12,7 +12,7 @@
 "email_subject":"Dev Service Down Alert",
 "jinja2_template":"summary.html.template",
 "verbose":"yes",
-"services":[
+"checks":[
             {
               "environment":"Dev Lev2",
               "type":"webapp",
@@ -21,6 +21,7 @@
           		"hosts":{"testserver":"SAS Web Application F5"},
           		"port":2443,
           		"service":["SASStoredProcess","SASStudio"],
+              "ignored_services":["SASStoredProcess"],
               "user":"demo",
               "password":"password",
               "enabled":"yes",
@@ -87,6 +88,7 @@
         "port":22,
         "ssh_id_rsa_filename":"/vagrant/va73_dist/ssh_keys/id_rsa",
         "service":["/tmp/sasserver.sh"],
+        "ignored_services":["SAS Metadata Server"],
         "user":"sas",
         "password":"password",
         "enabled":"no",
