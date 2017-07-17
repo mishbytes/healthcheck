@@ -9,6 +9,29 @@ import re
 from service import Service
 #project
 
+#Option name where list of services will be defined
+CONFIG_CHECKS_LIST_OPTION='checks'
+CONFIG_GOLDEN_OPTIONS=['log', CONFIG_CHECKS_LIST_OPTION]
+CONFIG_EMAIL_OPTIONS=['smtp','email_enabled','email_subject']
+CONFIG_OTHER_OPTIONS=['env_name',
+                      'env_level',
+                      'alert_lifetime',
+                      'verbose',
+                      'version',
+                      'comment',
+                      'report_type'
+                      ]
+
+#Options in this list will be kept and rest discarded
+CONFIG_ALL_OPTIONS=CONFIG_GOLDEN_OPTIONS + CONFIG_EMAIL_OPTIONS + CONFIG_OTHER_OPTIONS
+
+CONFIG_SERVICES_GOLDEN_OPTIONS=['type','service','protocol','hosts','port','user','password']
+CONFIG_SERVICES_OTHER_OPTIONS=['enabled','debug','description','ignored_services']
+CONFIG_SERVICES_TYPE_VALID_VALUES=['webapp','disk','sas.servers']
+
+#Options in this list will be kept and rest discarded
+CONFIG_SERVICES_ALL_OPTIONS= CONFIG_SERVICES_GOLDEN_OPTIONS + CONFIG_SERVICES_OTHER_OPTIONS
+
 class HealthCheckConfig(object):
 
     def __init__(self,configfile,configcheck=False):
@@ -44,16 +67,6 @@ class HealthCheckConfig(object):
 
     def load(self):
         log = logging.getLogger('config.load()')
-
-        CONFIG_GOLDEN_OPTIONS=['log','services']
-        CONFIG_EMAIL_OPTIONS=['smtp','email_enabled','email_subject']
-        CONFIG_OTHER_OPTIONS=['env_name','env_level','alert_lifetime','verbose','version','comment','report_type']
-        CONFIG_ALL_OPTIONS=CONFIG_GOLDEN_OPTIONS + CONFIG_EMAIL_OPTIONS + CONFIG_OTHER_OPTIONS
-
-        CONFIG_SERVICES_GOLDEN_OPTIONS=['type2','service','protocol','hosts','port','user','password']
-        CONFIG_SERVICES_OTHER_OPTIONS=['enabled','debug','description']
-        CONFIG_SERVICES_TYPE_VALID_VALUES=['webapp','disk','sas.servers']
-        CONFIG_SERVICES_ALL_OPTIONS= CONFIG_SERVICES_GOLDEN_OPTIONS + CONFIG_SERVICES_OTHER_OPTIONS
 
         if self.checkonly:
             log.info("Configuration check only")
@@ -113,7 +126,7 @@ class HealthCheckConfig(object):
                             self.email_subject=config[config_key]
 
                 #Find service and create service class instance
-                for services in config["services"]:
+                for services in config[CONFIG_CHECKS_LIST_OPTION]:
 
                     service_upper_case=[]
                     for k in services:
@@ -160,23 +173,35 @@ class HealthCheckConfig(object):
                     else:
                         group="Others"
 
+                    if "IGNORED_SERVICES" in service_upper_case:
+                        ignored_services=services["ignored_services"]
+                    else:
+                        ignored_services=[]
+
                     if  service_enabled and services['type'] in CONFIG_SERVICES_TYPE_VALID_VALUES:
                         log.debug("Loading services from Configuration file")
                         for service in services['service']:
-                            self.services.append(Service(environment_name,
-                                                     environment_level,
-                                                     group,
-                                                     service,
-                                                     services['type'],
-                                                     services['hosts'],
-                                                     services['port'],
-                                                     services['protocol'],
-                                                     services['user'],
-                                                     services['password'],
-                                                     debug=debug,
-                                                     ssh_private_key_filename=ssh_id_rsa_filename
-                                                     ))
-                            log.debug("Added Service %s to check" % service)
+                            if service not in ignored_services:
+                                self.services.append(Service(environment_name,
+                                                             environment_level,
+                                                             group,
+                                                             service,
+                                                             services['type'],
+                                                             services['hosts'],
+                                                             services['port'],
+                                                             services['protocol'],
+                                                             services['user'],
+                                                             services['password'],
+                                                             ignored_services,
+                                                             debug=debug,
+                                                             ssh_private_key_filename=ssh_id_rsa_filename
+                                                             )
+                                                     )
+                                log.debug("Added Service %s to check" % service)
+                            else:
+                                log.debug("Service %s found in ignore list %s" % (service,ignored_services))
+                                log.debug("Service %s ignored" % service)
+
                     else:
                         log.debug("Removed Service %s from check" % services)
 
@@ -209,8 +234,8 @@ class HealthCheckConfig(object):
     def validate(self,configfile):
         log = logging.getLogger('config.HealthCheckConfig.validate()')
         VALID_CONFIG_FILE=True
-        CONFIG_GOLDEN_OPTIONS=['log','services']
-        CONFIG_SERVICES_GOLDEN_OPTIONS=['type','service','protocol','hosts','port','user','password']
+        #CONFIG_GOLDEN_OPTIONS=['log','services']
+        #CONFIG_SERVICES_GOLDEN_OPTIONS=['type','service','protocol','hosts','port','user','password']
 
         log.debug("Validating configuration File Exist %s?" % (configfile))
         if os.path.exists(configfile):
@@ -232,7 +257,7 @@ class HealthCheckConfig(object):
                     else:
                         log.debug("Config Golden keys passed")
 
-                    for service_item in config["services"]:
+                    for service_item in config[CONFIG_CHECKS_LIST_OPTION]:
                         for service_golden_key in CONFIG_SERVICES_GOLDEN_OPTIONS:
                             if not service_golden_key in service_item:
                                 log.debug('key:value \"%s:value\" is missing for service %s' % (service_golden_key,service_item))

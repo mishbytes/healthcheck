@@ -55,7 +55,7 @@ class HealthcheckReporter(object):
             self.services_status={}
             self.servicealertstimer={}
             self.responsetime=0
-            self.messages=MessageDatabase()
+            self.messagedb=MessageDatabase()
 
 
 
@@ -78,7 +78,7 @@ class HealthcheckReporter(object):
         def run(self):
             self.responsetime=0
             #Discard old messages
-            self.messages.reset()
+            self.messagedb.reset()
             if self.start_event:
                 log = logging.getLogger('HealthcheckReporter.start()')
                 status_output=[]
@@ -98,7 +98,7 @@ class HealthcheckReporter(object):
                                 self.responsetime+=elapsed
                                 log.debug("Status Response" % service.status)
                                 try:
-                                    self.messages.add(service.status)
+                                    self.messagedb.add(service.status)
                                 except ValueError as e:
                                     log.debug("Invalid status format")
                                     log.exception(e)
@@ -122,4 +122,4 @@ class HealthcheckReporter(object):
 
         def send(self):
             log = logging.getLogger('HealthcheckReporter.send()')
-            send(self.config,self.messages)
+            send(self.config,self.messagedb)
