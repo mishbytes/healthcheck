@@ -144,7 +144,7 @@ class Service(object):
 
         self.status=delete_keys_from_dict(self.status,self.ignored_services)
 
-
+#https://stackoverflow.com/questions/3405715/elegant-way-to-remove-fields-from-nested-dictionaries
 def delete_keys_from_dict(dict_del, lst_keys):
     for k in lst_keys:
         try:
