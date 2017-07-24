@@ -43,7 +43,6 @@ def runsasserverstatus(environment,group,scriptpath,default_timeout=30):
 
     collect_status={}
 
-    ignore_services=["SAS Environment Manager"]
 
     #When using .* expression Python 2.6 throws nothing to repeat error
     #Replace .* with .+
@@ -52,6 +51,7 @@ def runsasserverstatus(environment,group,scriptpath,default_timeout=30):
                             r'(?:(?P<up_service_name>.+)(?=(.+)?\sis\sUP(.+)?$))?'
                             r'(?:(?P<started_service_name>.+)(?=(.+)?\sis\sstarted(.+)?$))?'
                             r'(?:(?P<stopped_service_name>.+)(?=(.+)?\sis\sstopped(.+)?$))?'
+                            r'(?:(?P<running_service_name>.+)(?=(.+)?\sis\srunning(.+)?$))?'
                       )
     #format_pat= re.compile(
     #                        r'(?:(?P<down_service_name>.*)(?=.*\sis\sNOT\sup.*$))?'
@@ -79,18 +79,7 @@ def runsasserverstatus(environment,group,scriptpath,default_timeout=30):
                 log.debug(result)
                 collect_status={}
                 for response in result.split('\n'):
-                    ignore_response=False
                     log.debug("    %s" % response)
-                    for ignore_service in ignore_services:
-                        if ignore_service in response:
-                            log.debug("List of services to be ignored from report %s" % ignore_services)
-                            log.debug("Response: %s" % response)
-                            log.debug("Response ignored as it contains service which is in ignore list")
-                            ignore_response=True
-
-                    if ignore_response:
-                        #do not proceed further if response is in ignore list
-                        continue
 
                     match_dict = format_pat.match(response)
                     if match_dict:
@@ -110,7 +99,11 @@ def runsasserverstatus(environment,group,scriptpath,default_timeout=30):
                             valid_response=True
                         elif output_line['stopped_service_name']:
                             service=output_line['stopped_service_name']
-                            status=True
+                            status=False
+                            valid_response=True
+                        elif output_line['running_service_name']:
+                            service=output_line['stopped_service_name']
+                            status=False
                             valid_response=True
                         else:
                             #reject response and go back to main loop
